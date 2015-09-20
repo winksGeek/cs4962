@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Created by devonwinkler on 9/15/15.
  */
-public class PaintAreaView extends View {
+public class PaintAreaView extends View implements PaletteView.OnPaintChangeListener{
     private Path drawPath;
     private Paint drawPaint;
     private int paintColor = 0xff000000;
@@ -29,34 +29,35 @@ public class PaintAreaView extends View {
         this.drawPath = new Path();
         this.drawPaint = new Paint();
         this.lines = new ArrayList<PolyLine>();
-        drawPaint.setColor(this.paintColor);
-        drawPaint.setAntiAlias(true);
-        drawPaint.setStrokeWidth(10.0f);
-        drawPaint.setStyle(Paint.Style.STROKE);
-        drawPaint.setStrokeJoin(Paint.Join.ROUND);
-        drawPaint.setStrokeCap(Paint.Cap.ROUND);
     }
 
     @Override
     protected void onDraw(Canvas canvas){
-        canvas.drawPath(drawPath, drawPaint);
+        for(PolyLine pl : lines){
+            Paint linePaint = new Paint();
+            Path linePath = new Path();
+            List<PointF> points = pl.getPoints();
+            linePaint.setColor(pl.getColor());
+            linePaint.setAntiAlias(true);
+            linePaint.setStrokeWidth(10.0f);
+            linePaint.setStyle(Paint.Style.STROKE);
+            linePaint.setStrokeJoin(Paint.Join.ROUND);
+            linePaint.setStrokeCap(Paint.Cap.ROUND);
+            for(int i = 0; i < points.size(); i++){
+                PointF point = points.get(i);
+                if(i == 0){
+                    linePath.moveTo(point.x*(float)getWidth(), point.y * (float)getHeight());
+                }else{
+                    linePath.lineTo(point.x*(float)getWidth(), point.y * (float)getHeight());
+                }
+            }
+            canvas.drawPath(linePath, linePaint);
+        }
     }
 
     @Override
     protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight){
         super.onSizeChanged(width, height, oldWidth, oldHeight);
-        for(PolyLine pl:lines){
-            List<PointF> points = pl.getPoints();
-            PointF origin = points.get(0);
-            drawPaint.setColor(pl.getColor());
-            drawPath.moveTo(origin.x * getWidth(), origin.y * getHeight());
-            for(int i = 1; i < points.size(); i++){
-                PointF nextPoint = points.get(i);
-                Log.d("TOUCH", "x: " + String.valueOf(nextPoint.x) + "y: " +  String.valueOf(nextPoint.y));
-                drawPath.lineTo(nextPoint.x * getWidth(), nextPoint.y * getHeight());
-            }
-        }
-//        drawPaint.setColor(this.paintColor);
     }
 
     @Override
@@ -66,20 +67,23 @@ public class PaintAreaView extends View {
         switch(event.getAction()){
             case MotionEvent.ACTION_DOWN:
                 line = new PolyLine(this.paintColor);
+                lines.add(line);
                 line.addPoint(x, y);
-                drawPath.moveTo(x, y);
                 break;
             case MotionEvent.ACTION_MOVE:
                 line.addPoint(x, y);
-                drawPath.lineTo(x, y);
                 break;
             case MotionEvent.ACTION_UP:
-                lines.add(line);
             default:
                 return false;
         }
         invalidate();
         return true;
+    }
+
+    @Override
+    public void onPaintChange(int color) {
+        this.paintColor = color;
     }
 
     private class PolyLine{

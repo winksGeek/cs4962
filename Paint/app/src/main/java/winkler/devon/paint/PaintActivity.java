@@ -1,10 +1,9 @@
 package winkler.devon.paint;
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
+import android.view.Gravity;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
@@ -15,19 +14,25 @@ public class PaintActivity extends Activity {
         super.onCreate(savedInstanceState);
         final LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setBackgroundColor(0xFFDDDDDD);
+
+        PaintAreaView canvas = new PaintAreaView(this);
+        canvas.setBackgroundColor(Color.WHITE);
+
+        layout.addView(canvas, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
 
         PaletteView paletteView = new PaletteView(this);
-        paletteView.setPadding(30, 60, 90, 120);
-        PaintAreaView canvas = new PaintAreaView(this);
-        layout.addView(canvas,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 7));
-        layout.addView(paletteView,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 3));
+        paletteView.setPadding(30, 30, 30, 30);
         paletteView.setBackgroundColor(0xFFDDDDDD);
-        setContentView(layout);
+        paletteView.setMyPaintChangeListener(canvas);
+        LinearLayout.LayoutParams paletteLayoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0);
+        paletteLayoutParams.gravity = Gravity.CENTER_HORIZONTAL;
+        DeletePaintView deletePaintView = new DeletePaintView(this);
+        deletePaintView.setMyDeletelistener(paletteView);
+        paletteView.addView(deletePaintView);
+        paletteView.initializePalette();
+        layout.addView(paletteView, paletteLayoutParams);
 
-        for(int i = 0; i < 10; i++){
-            View splotchView = new View(this);
-            splotchView.setBackgroundColor(0xFF000000 | (int)(Math.random() * 0x00FFFFFF));
-            paletteView.addView(splotchView);
-        }
+        setContentView(layout);
     }
 }
