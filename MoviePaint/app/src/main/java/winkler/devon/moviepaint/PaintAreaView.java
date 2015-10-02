@@ -1,11 +1,9 @@
 package winkler.devon.moviepaint;
 
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.Point;
 import android.graphics.PointF;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -21,37 +19,61 @@ public class PaintAreaView extends View implements PaletteView.OnPaintChangeList
     private Path drawPath;
     private Paint drawPaint;
     private int paintColor = 0xff000000;
-    List<PolyLine> lines;
+    private List<PolyLine> lines;
+    private double percentage = 0.0;
     PolyLine line;
+    boolean watchMode = false;
 
     public PaintAreaView(Context context){
         super(context);
         this.drawPath = new Path();
         this.drawPaint = new Paint();
-        this.lines = new ArrayList<PolyLine>();
+        this.setLines(new ArrayList<PolyLine>());
     }
 
     @Override
     protected void onDraw(Canvas canvas){
-        for(PolyLine pl : lines){
-            Paint linePaint = new Paint();
-            Path linePath = new Path();
-            List<PointF> points = pl.getPoints();
-            linePaint.setColor(pl.getColor());
-            linePaint.setAntiAlias(true);
-            linePaint.setStrokeWidth(10.0f);
-            linePaint.setStyle(Paint.Style.STROKE);
-            linePaint.setStrokeJoin(Paint.Join.ROUND);
-            linePaint.setStrokeCap(Paint.Cap.ROUND);
-            for(int i = 0; i < points.size(); i++){
-                PointF point = points.get(i);
-                if(i == 0){
-                    linePath.moveTo(point.x*(float)getWidth(), point.y * (float)getHeight());
-                }else{
-                    linePath.lineTo(point.x*(float)getWidth(), point.y * (float)getHeight());
-                }
+        int totalNumberofPoints = 0;
+        int i = 0;
+        int lineIndex = 0;
+        int pointIndex = 0;
+        for(PolyLine pl : getLines()){
+            totalNumberofPoints += pl.getNumberOfPoints();
+        }
+        Log.i("Drawing", "Number of points before percentage: " + totalNumberofPoints);
+        if(watchMode) {
+            totalNumberofPoints = (int) ((double) totalNumberofPoints * percentage);
+        }
+        Log.i("Drawing", "Number of points after percentage: " + totalNumberofPoints);
+        Paint linePaint = new Paint();
+        Path linePath = new Path();
+        while(i <= totalNumberofPoints && lineIndex < this.lines.size()){
+            PolyLine pl = this.lines.get(lineIndex);
+            if(pointIndex == 0){
+                linePaint = new Paint();
+                linePath = new Path();
+                linePaint.setColor(pl.getColor());
+                linePaint.setAntiAlias(true);
+                linePaint.setStrokeWidth(10.0f);
+                linePaint.setStyle(Paint.Style.STROKE);
+                linePaint.setStrokeJoin(Paint.Join.ROUND);
+                linePaint.setStrokeCap(Paint.Cap.ROUND);
             }
-            canvas.drawPath(linePath, linePaint);
+
+            List<PointF> points = pl.getPoints();
+            PointF point = points.get(pointIndex);
+            if(pointIndex == 0){
+                linePath.moveTo(point.x*(float)getWidth(), point.y * (float)getHeight());
+            }else{
+                linePath.lineTo(point.x*(float)getWidth(), point.y * (float)getHeight());
+            }
+            i++;
+            pointIndex++;
+            if(pointIndex >= pl.getNumberOfPoints() || i >= totalNumberofPoints){
+                lineIndex++;
+                pointIndex = 0;
+                canvas.drawPath(linePath, linePaint);
+            }
         }
     }
 
@@ -67,7 +89,7 @@ public class PaintAreaView extends View implements PaletteView.OnPaintChangeList
         switch(event.getAction()){
             case MotionEvent.ACTION_DOWN:
                 line = new PolyLine(this.paintColor);
-                lines.add(line);
+                getLines().add(line);
                 line.addPoint(x, y);
                 break;
             case MotionEvent.ACTION_MOVE:
@@ -86,7 +108,35 @@ public class PaintAreaView extends View implements PaletteView.OnPaintChangeList
         this.paintColor = color;
     }
 
-    private class PolyLine{
+    public List<PolyLine> getLines() {
+        List<PolyLine> list = new ArrayList<PolyLine>(lines);
+        return lines;
+    }
+
+    public void setLines(List<PolyLine> lines) {
+        this.lines = lines;
+        invalidate();
+    }
+
+    public void clearLines(){
+        this.lines = new ArrayList<PolyLine>();
+        invalidate();
+    }
+
+    public void setWatchMode(boolean isWatchMode){
+        this.watchMode = isWatchMode;
+        invalidate();
+    }
+
+    public void increasePercentage(){
+        this.percentage += .01;
+        if(this.percentage > 100.0){
+            this.percentage = 100.0;
+        }
+        invalidate();
+    }
+
+    public class PolyLine{
         List<PointF> points;
         int color;
         public PolyLine(int color){
@@ -96,6 +146,10 @@ public class PaintAreaView extends View implements PaletteView.OnPaintChangeList
         public void addPoint(float x, float y){
             PointF point = new PointF(x/(float)getWidth(), y/(float)getHeight());
             points.add(point);
+        }
+
+        public int getNumberOfPoints(){
+            return points.size();
         }
 
         public List<PointF> getPoints(){
