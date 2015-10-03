@@ -1,14 +1,20 @@
 package winkler.devon.moviepaint;
 
+import android.animation.Animator;
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -24,64 +30,152 @@ import java.util.List;
 
 public class MoviePaintActivity extends Activity {
 
-    PaintAreaView canvas;
-    Button paintButton, clearButton, watchButton, increaseButton;
+    PaintAreaView _canvas;
+    Button _paintButton, _clearButton, _watchButton, _drawButton;
+    ImageView _playButton;
+    boolean _playing = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         final LinearLayout activityLayout = new LinearLayout(this);
-        activityLayout.setOrientation(LinearLayout.HORIZONTAL);
-        activityLayout.setBackgroundColor(0xFFDDDDDD);
+        activityLayout.setOrientation(LinearLayout.VERTICAL);
+        activityLayout.setBackgroundColor(0xFFAAAAAA);
 
-        final LinearLayout menuLayout = new LinearLayout(this);
-        menuLayout.setOrientation(LinearLayout.VERTICAL);
-        menuLayout.setBackgroundColor(0xFFDDDDDD);
+        final LinearLayout watchMenuLayout = new LinearLayout(this);
+        watchMenuLayout.setOrientation(LinearLayout.HORIZONTAL);
+        watchMenuLayout.setBackgroundColor(0xFFAAAAAA);
+        watchMenuLayout.setGravity(Gravity.CENTER);
 
-        paintButton = new Button(this);
-        paintButton.setOnClickListener(new View.OnClickListener() {
+        final LinearLayout drawMenuLayout = new LinearLayout(this);
+        drawMenuLayout.setOrientation(LinearLayout.HORIZONTAL);
+        drawMenuLayout.setGravity(Gravity.CENTER_HORIZONTAL);
+        drawMenuLayout.setBackgroundColor(0xFFAAAAAA);
+
+        _paintButton = new Button(this);
+        _paintButton.setTextColor(0xFF000000);
+        _paintButton.setText("Color");
+        _paintButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent newColorIntent = new Intent(MoviePaintActivity.this, PalleteActivity.class);
                 startActivityForResult(newColorIntent, 1);
             }
         });
-        menuLayout.addView(paintButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
+        drawMenuLayout.addView(_paintButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
 
-        clearButton = new Button(this);
-        clearButton.setText("Clear");
-        clearButton.setOnClickListener(new View.OnClickListener() {
+        _clearButton = new Button(this);
+        _clearButton.setText("Clear");
+        _clearButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                canvas.clearLines();
+                _canvas.clearLines();
             }
         });
-        menuLayout.addView(clearButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
+        drawMenuLayout.addView(_clearButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
 
-        watchButton = new Button(this);
-        watchButton.setText("Watch");
-        watchButton.setOnClickListener(new View.OnClickListener() {
+        _watchButton = new Button(this);
+        _watchButton.setText("Watch");
+        _watchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                canvas.setWatchMode(true);
+                _canvas.setWatchMode(true);
+                activityLayout.removeView(drawMenuLayout);
+                activityLayout.addView(watchMenuLayout);
             }
         });
-        menuLayout.addView(watchButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
+        drawMenuLayout.addView(_watchButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
 
-        increaseButton = new Button(this);
-        increaseButton.setText("Up");
-        increaseButton.setOnClickListener(new View.OnClickListener() {
+
+
+        _drawButton = new Button(this);
+        _drawButton.setText("Draw");
+        _drawButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                canvas.increasePercentage();
+                _canvas.setWatchMode(false);
+                activityLayout.removeView(watchMenuLayout);
+                activityLayout.addView(drawMenuLayout);
             }
         });
-        menuLayout.addView(increaseButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
+        watchMenuLayout.addView(_drawButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
 
-        canvas = new PaintAreaView(this);
-        canvas.setBackgroundColor(Color.WHITE);
+        _playButton = new ImageView(this);
+        _playButton.setImageResource(R.drawable.player6);
+        watchMenuLayout.addView(_playButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
 
-        activityLayout.addView(menuLayout);
-        activityLayout.addView(canvas, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+        final SeekBar sb = new SeekBar(this);
+        watchMenuLayout.addView(sb, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                _canvas.setPercentage(progress);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                //not doing anything here
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                //not doing anything here
+            }
+        });
+
+        final ValueAnimator animator = new ValueAnimator();
+        _playButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!_playing){
+                    if(sb.getProgress() >= 100){
+                        sb.setProgress(0);
+                    }
+                    animator.setIntValues(sb.getProgress(), 100);
+                    animator.setDuration((int)(5000.0 * (100.0 - (double)sb.getProgress())/100.0));
+                    animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                        @Override
+                        public void onAnimationUpdate(ValueAnimator animation) {
+                            sb.setProgress((Integer) animation.getAnimatedValue());
+                        }
+                    });
+                    animator.addListener(new Animator.AnimatorListener() {
+                        @Override
+                        public void onAnimationStart(Animator animation) {
+                            _playing = true;
+                            _playButton.setImageResource(R.drawable.rounded57);
+                        }
+
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            _playing = false;
+                            _playButton.setImageResource(R.drawable.player6);
+                        }
+
+                        @Override
+                        public void onAnimationCancel(Animator animation) {
+                            _playing = false;
+                            _playButton.setImageResource(R.drawable.player6);
+                        }
+
+                        @Override
+                        public void onAnimationRepeat(Animator animation) {
+                            //not using this
+                        }
+                    });
+                    animator.start();
+                }else{
+                    animator.cancel();
+                }
+            }
+        });
+
+
+        _canvas = new PaintAreaView(this);
+        _canvas.setBackgroundColor(Color.WHITE);
+
+        activityLayout.addView(_canvas, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+        activityLayout.addView(drawMenuLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
 
         setContentView(activityLayout);
     }
@@ -98,7 +192,7 @@ public class MoviePaintActivity extends Activity {
             Gson gson = new Gson();
             Type collectionType = new TypeToken<ArrayList<PaintAreaView.PolyLine>>(){}.getType();
             ArrayList<PaintAreaView.PolyLine> lines = gson.fromJson(jsonString, collectionType);
-            canvas.setLines(lines);
+            _canvas.setLines(lines);
 
         }catch (Exception e){
             Log.e("Persistence", "Error saving file: " + e.getMessage());
@@ -108,7 +202,7 @@ public class MoviePaintActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-        List<PaintAreaView.PolyLine> polyLines = canvas.getLines();
+        List<PaintAreaView.PolyLine> polyLines = _canvas.getLines();
         Gson gson = new Gson();
         String jsonString = gson.toJson(polyLines);
         try{
@@ -128,8 +222,8 @@ public class MoviePaintActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
         if(resultCode == RESULT_OK){
             int paintColor = data.getIntExtra("paintColor", 0xFF000000);
-            canvas.onPaintChange(paintColor);
-            paintButton.setBackgroundColor(paintColor);
+            _canvas.onPaintChange(paintColor);
+            _paintButton.setTextColor(paintColor);
         }
     }
 

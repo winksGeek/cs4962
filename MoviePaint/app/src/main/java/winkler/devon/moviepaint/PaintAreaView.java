@@ -86,20 +86,22 @@ public class PaintAreaView extends View implements PaletteView.OnPaintChangeList
     public boolean onTouchEvent(MotionEvent event){
         float x = event.getX();
         float y = event.getY();
-        switch(event.getAction()){
-            case MotionEvent.ACTION_DOWN:
-                line = new PolyLine(this.paintColor);
-                getLines().add(line);
-                line.addPoint(x, y);
-                break;
-            case MotionEvent.ACTION_MOVE:
-                line.addPoint(x, y);
-                break;
-            case MotionEvent.ACTION_UP:
-            default:
-                return false;
+        if(!this.watchMode) {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    line = new PolyLine(this.paintColor);
+                    getLines().add(line);
+                    line.addPoint(x, y);
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    line.addPoint(x, y);
+                    break;
+                case MotionEvent.ACTION_UP:
+                default:
+                    return false;
+            }
+            invalidate();
         }
-        invalidate();
         return true;
     }
 
@@ -128,11 +130,8 @@ public class PaintAreaView extends View implements PaletteView.OnPaintChangeList
         invalidate();
     }
 
-    public void increasePercentage(){
-        this.percentage += .01;
-        if(this.percentage > 100.0){
-            this.percentage = 100.0;
-        }
+    public void setPercentage(int percentage) {
+        this.percentage = (double)percentage / 100.0;
         invalidate();
     }
 
