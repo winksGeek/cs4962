@@ -5,46 +5,58 @@ import android.app.FragmentTransaction;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.util.Timer;
+import java.util.TimerTask;
 
-public class BattleshipGameActivity extends Activity implements GameDetailFragment.GameBoardListener  {
+public class BattleshipGameActivity extends Activity implements GameDetailFragment.GameBoardListener, BattleshipDataModel.BattleshipGameController {
 
     BattleshipDataModel _model = BattleshipDataModel.getInstance();
+    BattleshipSession _session = BattleshipSession.getInstance();
+    FrameLayout _gameLayout;
+    Timer _turnTimer = new Timer();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Intent intent = getIntent();
-        int id = intent.getIntExtra("id", 0);
-        _model.setCurrentGame(id);
-        FrameLayout gameLayout = new FrameLayout(this);
-        gameLayout.setId(11);
+        String id = intent.getStringExtra("id");
+        _model.setGameController(this);
+//        _model.setCurrentGame(id);
+        _gameLayout = new FrameLayout(this);
+        _gameLayout.setId(11);
 
-        setContentView(gameLayout);
+        setContentView(_gameLayout);
 
         FragmentTransaction transaction = getFragmentManager().beginTransaction();
         GameDetailFragment gameDetailFragment = (GameDetailFragment) getFragmentManager().findFragmentByTag(BattleshipMainActivity.GAME_DETAIL_TAG);
+        WaitingForOpponentFragment waitingForOpponentFragment = (WaitingForOpponentFragment) getFragmentManager().findFragmentByTag(BattleshipMainActivity.WAIT_OPPONENT_TAG);
         if (gameDetailFragment == null) {
             gameDetailFragment = GameDetailFragment.newInstance(id);
-            transaction.add(gameLayout.getId(), gameDetailFragment, BattleshipMainActivity.GAME_DETAIL_TAG);
+            transaction.add(_gameLayout.getId(), gameDetailFragment, BattleshipMainActivity.GAME_DETAIL_TAG);
         }
+        if(waitingForOpponentFragment == null){
+            waitingForOpponentFragment = WaitingForOpponentFragment.newInstance();
+            transaction.add(_gameLayout.getId(), waitingForOpponentFragment, BattleshipMainActivity.WAIT_OPPONENT_TAG);
+        }
+        transaction.hide(gameDetailFragment);
+        transaction.hide(waitingForOpponentFragment);
         transaction.commit();
+        _model.loadGameIntoSession(id);
+        startTurnCheckTimer();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        _turnTimer.cancel();
         Gson gson = new Gson();
         String jsonString = gson.toJson(_model.getGames());
         try{
@@ -60,41 +72,77 @@ public class BattleshipGameActivity extends Activity implements GameDetailFragme
     }
 
     @Override
-    public void launchMissile(int x, int y, BattleshipGridView opponentView) {
-        int result = _model.launchMissile(x, y);
-        opponentView.setBoard(_model.getCurrentOpponentBoard());
-        boolean winningMove  = _model.checkForWin();
-        if(winningMove){
-            _model.finishGame();
-            Intent intent = new Intent(this, WinScreen.class);
-            intent.putExtra("winner", _model.getCurrentTurn());
-            startActivityForResult(intent, WinScreen.WIN_REQUEST_CODE);
-        }else{
-            if(result > 1) {
-                _model.changeTurn();
-                Intent intent = new Intent(this, BlindActivity.class);
-                intent.putExtra("result", result);
-                intent.putExtra("nextPlayer", _model.getCurrentTurn());
-                startActivityForResult(intent, BlindActivity.BLIND_REQUEST_CODE);
-            }
-        }
+    public void launchMissile(int x, int y) {
+        _model.launchMissile(x, y);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if(requestCode == BlindActivity.BLIND_REQUEST_CODE) {
-            GameDetailFragment gameDetailFragment = (GameDetailFragment) getFragmentManager().findFragmentByTag(BattleshipMainActivity.GAME_DETAIL_TAG);
-            gameDetailFragment.setOpponentBoard(_model.getCurrentOpponentBoard());
-            gameDetailFragment.setPlayerBoard(_model.getCurrentPlayerBoard());
-        }
         if(requestCode == WinScreen.WIN_REQUEST_CODE) {
             finish();
         }
     }
 
+//    @Override
+    public void startTurnCheckTimer() {
+        _turnTimer = new Timer();
+        _turnTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                _model.checkTurn();
+            }
+        }, 0, 3000);
+    }
+
     @Override
-    public void loadGame(GameDetailFragment gameDetailFragment, int gameId) {
-        gameDetailFragment.setPlayerBoard(_model.getCurrentPlayerBoard());
-        gameDetailFragment.setOpponentBoard(_model.getCurrentOpponentBoard());
+    public void onBoardsReceived(Game.BoardCell[] playerBoard, Game.BoardCell[] opponentBoard) {
+        GameDetailFragment gameDetailFragment = (GameDetailFragment) getFragmentManager().findFragmentByTag(BattleshipMainActivity.GAME_DETAIL_TAG);
+        gameDetailFragment.setOpponentBoard(opponentBoard);
+        gameDetailFragment.setPlayerBoard(playerBoard);
+
+    }
+
+    @Override
+    public void onGuessReceived(boolean hit, int shipSunk){
+        String hitText = hit?"Hit!":"Miss!";
+        hitText += shipSunk > 0?"\nShip of size " + shipSunk +" Sunk": "";
+        int duration = Toast.LENGTH_SHORT;
+        Toast toast = Toast.makeText(this, hitText, duration);
+        toast.show();
+        startTurnCheckTimer();
+    }
+
+    @Override
+    public void onTurnCheckReceived(boolean isMyturn, String winner){
+        if("IN PROGRESS".equals(winner)){
+            WaitingForOpponentFragment waitingForOpponentFragment = (WaitingForOpponentFragment) getFragmentManager().findFragmentByTag(BattleshipMainActivity.WAIT_OPPONENT_TAG);
+            GameDetailFragment gameDetailFragment = (GameDetailFragment) getFragmentManager().findFragmentByTag(BattleshipMainActivity.GAME_DETAIL_TAG);
+            _turnTimer.cancel();
+            if(isMyturn){
+                FragmentTransaction transaction = getFragmentManager().beginTransaction();
+                if(waitingForOpponentFragment != null){
+                    transaction.hide(waitingForOpponentFragment);
+                }
+                if(gameDetailFragment != null){
+                    transaction.show(gameDetailFragment);
+                }
+                transaction.commit();
+                _model.loadBoards();
+            }else{
+                FragmentTransaction transaction = getFragmentManager().beginTransaction();
+                if(gameDetailFragment != null){
+                    transaction.hide(gameDetailFragment);
+                }
+                if(waitingForOpponentFragment != null){
+                    transaction.show(waitingForOpponentFragment);
+                }
+                transaction.commit();
+                startTurnCheckTimer();
+            }
+        }else{
+            Intent intent = new Intent(this, WinScreen.class);
+            intent.putExtra("winner", winner);
+            startActivityForResult(intent, WinScreen.WIN_REQUEST_CODE);
+        }
     }
 }

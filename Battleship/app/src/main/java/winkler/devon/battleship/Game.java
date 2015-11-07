@@ -1,16 +1,22 @@
 package winkler.devon.battleship;
 
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import java.util.Random;
 
 public class Game{
 
     public static final int HITS_TO_WIN = 17;
-    public class GameInfoObject{
-        String currentTurn;
-        String missilesLaunchedOne;
-        String missilesLaunchedTwo;
-        String gameStatus;
+    public static enum BoardCellStatus{
+        HIT, MISS, SHIP, NONE
+    }
+
+    public static class BoardCell{
+        int xPos;
+        int yPos;
+        BoardCellStatus status;
     }
 
     private int _currentTurn;
@@ -159,14 +165,5 @@ public class Game{
         String winner = _currentTurn == 0?"Player 1":"Player 2";
         _gameStatus = "Finished, Winner: " + winner;
         _active = false;
-    }
-
-    public GameInfoObject getDisplayInfo(){
-        GameInfoObject gameInfoObject = new GameInfoObject();
-        gameInfoObject.currentTurn = _currentTurn == 0 ? "Player 1" : "Player 2";
-        gameInfoObject.gameStatus = _gameStatus;
-        gameInfoObject.missilesLaunchedOne = Integer.toString(_missilesLaunched[0]);
-        gameInfoObject.missilesLaunchedTwo = Integer.toString(_missilesLaunched[1]);
-        return gameInfoObject;
     }
 }

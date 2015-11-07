@@ -19,10 +19,10 @@ import android.view.View;
 public class BattleshipGridView extends View {
 
     public interface CellClickListener{
-        public void onCellClick(int x, int y, BattleshipGridView view);
+        public void onCellClick(int x, int y);
     }
 
-    int[][]_board;
+    Game.BoardCell[]_board;
     boolean _showShips;
     CellClickListener _cellClickListener;
     public BattleshipGridView(Context context, boolean showShips) {
@@ -31,7 +31,7 @@ public class BattleshipGridView extends View {
         _showShips = showShips;
     }
 
-    public void setBoard(int[][]board) {
+    public void setBoard(Game.BoardCell[]board) {
         _board = board;
         invalidate();
     }
@@ -78,7 +78,7 @@ public class BattleshipGridView extends View {
         if(!_showShips) {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 if (_cellClickListener != null) {
-                    _cellClickListener.onCellClick(newX, newY, this);
+                    _cellClickListener.onCellClick(newX, newY);
                 }
             }
         }
@@ -93,35 +93,32 @@ public class BattleshipGridView extends View {
             int squareWidth = getWidth() / 10;
             int squareHeight = getHeight() / 10;
             int squareMargin = 2;
-            for (int x = 0; x < _board.length; x++) {
-                for (int y = 0; y < _board[x].length; y++) {
-                    int content = _board[x][y];
-                    int color = 0xFF0000FF;
-                    int paddingTop = y == 0 ? getPaddingTop() : 0;
-                    int paddingRight = x == _board.length-1 ? getPaddingRight() : 0;
-                    int paddingBottom = y == _board[x].length-1 ? getPaddingBottom() : 0;
-                    int paddingLeft = x == 0 ? getPaddingLeft() : 0;
-                    switch (content) {
-                        case 1:
-                            if(_showShips) {
-                                color = 0xFF444444;
-                            }
-                            break;
-                        case 2://miss
-                            color = 0xFFFFFFFF;
-                            break;
-                        case 3://hit
-                            color = 0xFFFF0000;
-                            break;
-                    }
-                    paint.setColor(color);
-                    Rect squareRect = new Rect();
-                    squareRect.top = paddingTop + y * squareHeight + squareMargin;
-                    squareRect.left = paddingLeft + x * squareWidth + squareMargin;
-                    squareRect.right = getWidth() - squareWidth * (10 - (x + 1)) - squareMargin - paddingRight;
-                    squareRect.bottom = getHeight() - squareHeight * (10 - (y + 1)) - squareMargin - paddingBottom;
-                    canvas.drawRect(squareRect, paint);
+            for (int i = 0; i < _board.length; i++) {
+                Game.BoardCell cell = _board[i];
+                Game.BoardCellStatus status = cell.status;
+                int color = 0xFF0000FF;
+                int paddingTop = cell.yPos == 0 ? getPaddingTop() : 0;
+                int paddingRight = cell.xPos == 9 ? getPaddingRight() : 0;
+                int paddingBottom = cell.yPos == 9 ? getPaddingBottom() : 0;
+                int paddingLeft = cell.xPos == 0 ? getPaddingLeft() : 0;
+                switch (status) {
+                    case SHIP:
+                            color = 0xFF444444;
+                        break;
+                    case MISS://miss
+                        color = 0xFFFFFFFF;
+                        break;
+                    case HIT://hit
+                        color = 0xFFFF0000;
+                        break;
                 }
+                paint.setColor(color);
+                Rect squareRect = new Rect();
+                squareRect.top = paddingTop + cell.yPos * squareHeight + squareMargin;
+                squareRect.left = paddingLeft + cell.xPos * squareWidth + squareMargin;
+                squareRect.right = getWidth() - squareWidth * (10 - (cell.xPos + 1)) - squareMargin - paddingRight;
+                squareRect.bottom = getHeight() - squareHeight * (10 - (cell.yPos + 1)) - squareMargin - paddingBottom;
+                canvas.drawRect(squareRect, paint);
             }
         }
     }

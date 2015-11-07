@@ -6,4 +6,10 @@
     <string name="title_activity_battleship_game">BattleshipGameActivity</string>
     <string name="title_activity_blind">BlindActivity</string>
     <string name="title_activity_win_screen">WinScreen</string>
+    <string name="mainApiUrl">"battleship.pixio.com/api/"</string>
+    <string name="title_activity_info_form">InfoFormActivity</string>
+    <string name="title_activity_battleship_game_display">BattleshipGameDisplayActivity</string>
+
+<!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

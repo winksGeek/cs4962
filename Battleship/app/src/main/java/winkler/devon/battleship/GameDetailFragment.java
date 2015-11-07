@@ -15,30 +15,32 @@ import android.widget.LinearLayout;
 public class GameDetailFragment extends Fragment implements BattleshipGridView.CellClickListener {
 
     public interface  GameBoardListener{
-        public void launchMissile(int x, int y, BattleshipGridView view);
-        public void loadGame(GameDetailFragment gameDetailFragment, int gameId);
+        public void launchMissile(int x, int y);
+//        public void loadGame(GameDetailFragment gameDetailFragment, String gameId);
     }
 
     public static final String GAME_RESOURE_KEY = "GAME_RESOURE_KEY";
     BattleshipGridView _myView;
     BattleshipGridView _opponentView;
     GameBoardListener _gameBoardListener;
-    int _gameId = 0;
+    String _gameId = "";
 
-    public static GameDetailFragment newInstance(int gameResourceId){
+    public static GameDetailFragment newInstance(String gameResourceId){
         GameDetailFragment gameDetailFragment = new GameDetailFragment();
         Bundle arguments = new Bundle();
-        arguments.putInt(GAME_RESOURE_KEY, gameResourceId);
+        arguments.putString(GAME_RESOURE_KEY, gameResourceId);
         gameDetailFragment.setArguments(arguments);
         return gameDetailFragment;
     }
 
-    public void setOpponentBoard(int [][] board){
+    public void setOpponentBoard(Game.BoardCell[] board){
         _opponentView.setBoard(board);
+        _opponentView.invalidate();
     }
 
-    public void setPlayerBoard(int [][] board){
+    public void setPlayerBoard(Game.BoardCell[] board){
         _myView.setBoard(board);
+        _myView.invalidate();
     }
 
     @Override
@@ -56,7 +58,7 @@ public class GameDetailFragment extends Fragment implements BattleshipGridView.C
         LinearLayout boardLayout = new LinearLayout(getActivity());
         boardLayout.setOrientation(LinearLayout.VERTICAL);
         boardLayout.setGravity(Gravity.CENTER);
-        _gameId = getArguments().getInt(GAME_RESOURE_KEY);
+        _gameId = getArguments().getString(GAME_RESOURE_KEY);
         _myView = new BattleshipGridView(getActivity(), true);
         _myView.setPadding(5, 5, 5, 5);
         _opponentView = new BattleshipGridView(getActivity(), false);
@@ -64,16 +66,16 @@ public class GameDetailFragment extends Fragment implements BattleshipGridView.C
         boardLayout.addView(_opponentView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
         boardLayout.addView(_myView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
         _opponentView.setCellClickListener(this);
-        _gameBoardListener.loadGame(this, _gameId);
+//        _gameBoardListener.loadGame(this, _gameId);
         return boardLayout;
     }
 
     @Override
-    public void onCellClick(int x, int y, BattleshipGridView view) {
-        _gameBoardListener.launchMissile(x, y, view);
+    public void onCellClick(int x, int y) {
+        _gameBoardListener.launchMissile(x, y);
     }
 
-    public void setGameId(int gameId){
+    public void setGameId(String gameId){
         _gameId = gameId;
     }
 }

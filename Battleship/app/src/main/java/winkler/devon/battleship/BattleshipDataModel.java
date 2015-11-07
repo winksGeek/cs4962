@@ -1,18 +1,32 @@
 package winkler.devon.battleship;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Random;
 
 /**
  * Created by devonwinkler on 10/20/15.
  */
-public class BattleshipDataModel {
+public class BattleshipDataModel implements BattleshipNetworkLayer.BattleshipListener{
+
+    public interface BattleshipListController{
+        public void onListReceived(GameInfoObject[] games);
+//        public void onGameCreated(String gameId, String playerId);
+        public void onGameJoined(String gameId, String playerId);
+        public void onGameDetailsReceived(GameInfoObject gameInfoObject);
+    }
+
+    public interface BattleshipGameController{
+        public void onBoardsReceived(Game.BoardCell[] playerBoard, Game.BoardCell[] opponentBoard);
+        public void onGuessReceived(boolean hit, int shipSunk);
+        public void onTurnCheckReceived(boolean isMyturn, String winner);
+    }
 
     private static BattleshipDataModel _Instance = null;
-    private Game _currentGame;
+    private String _currentGame;
+    private BattleshipListController _listController;
+    private BattleshipGameController _gameController;
+
     public static BattleshipDataModel getInstance(){
         if(_Instance == null){
             _Instance = new BattleshipDataModel();
@@ -20,31 +34,72 @@ public class BattleshipDataModel {
         return _Instance;
     }
 
-    private HashMap<Integer, Game> _games;
+    private HashMap<String, String> _myGames;
 
     private BattleshipDataModel(){
-        _games = new HashMap<>();
+        _myGames = new HashMap<>();
     }
 
-    public int createNewGame(){
-        int id = _games.size();
-        _games.put(id, new Game(id));
-        return id;
+    public void setListController(BattleshipListController controller){
+        _listController = controller;
     }
 
-    public int getCurrentGameId(){
+    public void setGameController(BattleshipGameController controller){
+        _gameController = controller;
+    }
+
+    public void createNewGame(String gameName, String playerName){
+        BattleshipNetworkLayer.createNewGame(playerName, gameName, this);
+    }
+
+    public void prepareToJoinGame(String gameId){
+        _myGames.put("joining", gameId);
+    }
+
+    public void joinGame(String playerName, String gameId) {
+        BattleshipNetworkLayer.joinGame(playerName, gameId, this);
+    }
+
+    public void checkTurn(){
+        BattleshipNetworkLayer.checkTurn(this);
+    }
+
+    public boolean isMyGame(String id) {
+        return _myGames.containsKey(id);
+    }
+
+    public void loadBoards(){
+        BattleshipNetworkLayer.getBoards(this);
+    }
+
+    public void loadGameIntoSession(String gameId){
+        BattleshipSession session =  BattleshipSession.getInstance();
+        String playerId = _myGames.get(gameId);
+        session.setSessionVariable("playerId", playerId);
+        session.setSessionVariable("gameId", gameId);
+    }
+
+    public void loadGameList(){
+        BattleshipNetworkLayer.getGamesList(this);
+    }
+
+    public void loadGameDetails(String gameId){
+        BattleshipNetworkLayer.getGame(gameId, this);
+    }
+
+    public String getCurrentGameId(){
         if(_currentGame == null){
-            return -1;
+            return "";
         }
-        return _currentGame.getGameId();
+        return _currentGame;
     }
 
-    public void setCurrentGame(int id){
-        _currentGame = _games.get(id);
+    public void setCurrentGame(String id){
+        _currentGame = id;
     }
 
     public ArrayList<Integer> getGameIds() {
-        Integer[] ids = _games.keySet().toArray(new Integer[_games.size()]);
+        Integer[] ids = _myGames.keySet().toArray(new Integer[_myGames.size()]);
 //        Arrays.sort(ids, Collections.reverseOrder());
         ArrayList<Integer> idArray = new ArrayList<>();
         for(int i = 0; i < ids.length; i++){
@@ -55,47 +110,105 @@ public class BattleshipDataModel {
         return idArray;
     }
 
-    public int getCurrentTurn(){
-        return _currentGame.get_currentTurn();
+//    public int getCurrentTurn(){
+//        return _currentGame.get_currentTurn();
+//    }
+
+//    public void changeTurn(){
+//        _currentGame.changeTurn();
+//    }
+
+    public void launchMissile(int x, int y){
+        BattleshipNetworkLayer.fireMissile(x, y, this);
     }
 
-    public void changeTurn(){
-        _currentGame.changeTurn();
+//    public int[][] getCurrentOpponentBoard(){
+//        return _currentGame.getOpponentBoard();
+//    }
+//
+//    public int[][] getCurrentPlayerBoard(){
+//        return _currentGame.getPlayerBoard();
+//    }
+
+//    public Game getGameById(int id){
+//        return _myGames.get(id);
+//    }
+//
+    public void setGames(HashMap<String, String> games){
+        _myGames = games;
+    }
+//
+    public HashMap<String, String> getGames() {
+        return _myGames;
+    }
+//
+//    public Game.GameInfoObject getGameDisplayInfo(Integer id){
+//        return _myGames.get(id).getDisplayInfo();
+//    }
+//
+//    public boolean checkForWin(){
+//        return _currentGame.checkForWin();
+//    }
+//
+//    public void finishGame(){
+//        _currentGame.finishGame();
+//    }
+
+    @Override
+    public void onGameCreated(boolean success, BattleshipNetworkLayer.CreateGameResponse response) {
+        if(success) {
+            _myGames.put(response.gameId, response.playerId);
+//            _listController.onGameCreated(response.gameId, response.playerId);
+        }
     }
 
-    public int launchMissile(int x, int y){
-        return _currentGame.launchMissile(x, y);
+    @Override
+    public void onGameList(boolean success, GameInfoObject[] games) {
+        if(success && _listController != null){
+            _listController.onListReceived(games);
+        }
     }
 
-    public int[][] getCurrentOpponentBoard(){
-        return _currentGame.getOpponentBoard();
+    @Override
+    public void onGameJoin(boolean success, BattleshipNetworkLayer.JoinResponse response) {
+        String gameId = _myGames.get("joining");
+        if(success) {
+            _myGames.put(gameId, response.playerId);
+            _listController.onGameJoined(gameId, response.playerId);
+        }
+        _myGames.remove("joining");
     }
 
-    public int[][] getCurrentPlayerBoard(){
-        return _currentGame.getPlayerBoard();
+    @Override
+    public void onGameInfo(boolean success, GameInfoObject game) {
+        if(success){
+            _listController.onGameDetailsReceived(game);
+        }
     }
 
-    public Game getGameById(int id){
-        return _games.get(id);
+    @Override
+    public void onGameGuess(boolean success, BattleshipNetworkLayer.GameGuessResponse response) {
+        if(success){
+            _gameController.onGuessReceived(response.hit, response.shipSunk);
+        }
     }
 
-    public void setGames(HashMap<Integer, Game> games){
-        _games = games;
+    @Override
+    public void onGameTurn(boolean success, BattleshipNetworkLayer.CheckTurnResponse response) {
+        if(success){
+            BattleshipSession session = BattleshipSession.getInstance();
+            session.setSessionVariable("myTurn", response.isYourTurn);
+            if(response.isYourTurn){
+                session.setSessionVariable("winner", response.winner);
+            }
+            _gameController.onTurnCheckReceived(response.isYourTurn, response.winner);
+        }
     }
 
-    public HashMap<Integer, Game> getGames(){
-        return _games;
-    }
-
-    public Game.GameInfoObject getGameDisplayInfo(Integer id){
-        return _games.get(id).getDisplayInfo();
-    }
-
-    public boolean checkForWin(){
-        return _currentGame.checkForWin();
-    }
-
-    public void finishGame(){
-        _currentGame.finishGame();
+    @Override
+    public void onGameBoard(boolean success, BattleshipNetworkLayer.BoardResponse response) {
+        if(success){
+            _gameController.onBoardsReceived(response.playerBoard, response.opponentBoard);
+        }
     }
 }

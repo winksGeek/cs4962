@@ -27,48 +27,49 @@ public class GameListFragment extends Fragment implements ListAdapter{
     public static final String GAME_LIST_KEY = "GAME_LIST_KEY";
 
     public interface GameListItemListener {
-        public Game.GameInfoObject getGameInformation(int id);
-        public void openGame(int id);
+//        public GameInfoObject getGameInformation(String id);
+        public void openGame(GameInfoObject gameInfoObject);
     }
 
     GameListItemListener _gameListItemListener;
     View.OnClickListener _newGameListener;
-    ArrayList<Integer> _gameList;
-    int _currentGameId;
+    ArrayList<GameInfoObject> _gameList;
+    String _currentGameId;
 
-    public static GameListFragment newInstance(ArrayList<Integer> games){
+    public static GameListFragment newInstance(ArrayList<GameInfoObject> games){
         GameListFragment gameListFragment = new GameListFragment();
         Bundle args = new Bundle();
-        args.putIntegerArrayList(GAME_LIST_KEY, games);
+        args.putParcelableArrayList(GAME_LIST_KEY, games);
+//        args.putStringArrayList(GAME_LIST_KEY, games);
         gameListFragment.setArguments(args);
         return gameListFragment;
     }
 
-    public void addGameToGameList(int gameId) {
+    public void addGameToGameList(GameInfoObject gameId) {
         _gameList.add(gameId);
         refreshList();
     }
 
-    public void setGameList(ArrayList<Integer> gameList){
+    public void setGameList(ArrayList<GameInfoObject> gameList){
         _gameList = gameList;
         refreshList();
     }
 
-    public void setCurrentGameId(int currentGameId){
+    public void setCurrentGameId(String currentGameId){
         _currentGameId = currentGameId;
         refreshList();
     }
 
     public void refreshList(){
-        Collections.sort(_gameList, Collections.reverseOrder());
+        Collections.sort(_gameList);
         ListView gameListView = (ListView)getView();
         gameListView.invalidateViews();
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        _gameList = getArguments().getIntegerArrayList(GAME_LIST_KEY);
-        _currentGameId = -1;
+        _gameList = getArguments().getParcelableArrayList(GAME_LIST_KEY);
+        _currentGameId = "";
         Button createGame = new Button(getActivity());
         createGame.setText("New Game");
         createGame.setOnClickListener(_newGameListener);
@@ -81,7 +82,7 @@ public class GameListFragment extends Fragment implements ListAdapter{
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 if (_gameListItemListener != null) {
-                    _gameListItemListener.openGame((int) getItem(position - 1));
+                    _gameListItemListener.openGame((GameInfoObject)getItem(position - 1));
                 }
             }
         });
@@ -139,14 +140,10 @@ public class GameListFragment extends Fragment implements ListAdapter{
     public View getView(int position, View convertView, ViewGroup parent) {
         TextView gameView = new TextView(getActivity());
         int padding = (int)(8.0f * getResources().getDisplayMetrics().density);
-        int gameId =  (int)getItem(position);
-        String text = Integer.toString(gameId);
-        if(_gameListItemListener != null){
-            Game.GameInfoObject info = _gameListItemListener.getGameInformation(gameId);
-            text = info.gameStatus + "\nMissiles Launched:\n    P1: " + info.missilesLaunchedOne + " P2: " + info.missilesLaunchedTwo + "\nCurrent Turn: " + info.currentTurn;
-            if(_currentGameId == gameId){
-                gameView.setBackgroundColor(0xFFFFFFCC);
-            }
+        GameInfoObject info =  (GameInfoObject)getItem(position);
+        String text = info.name + "\n" + info.status;
+        if(_currentGameId == info.id){
+            gameView.setBackgroundColor(0xFFFFFFCC);
         }
         gameView.setText(text);
         gameView.setPadding(padding, padding, padding, padding);
