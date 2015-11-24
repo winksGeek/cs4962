@@ -8,18 +8,18 @@ import java.util.Random;
  * Created by devonwinkler on 11/16/15.
  */
 public class RoleRandom {
-    private ArrayList<Player.Role> _roles;
+    private ArrayList<Role.Type> _roles;
     public RoleRandom(){
         _roles = new ArrayList<>();
-        _roles.add(Player.Role.Archeologist);
-        _roles.add(Player.Role.Climber);
-        _roles.add(Player.Role.Explorer);
-        _roles.add(Player.Role.Meteorologist);
-        _roles.add(Player.Role.Navigator);
-        _roles.add(Player.Role.WaterCarrier);
+        _roles.add(Role.Type.Archeologist);
+        _roles.add(Role.Type.Climber);
+        _roles.add(Role.Type.Explorer);
+        _roles.add(Role.Type.Meteorologist);
+        _roles.add(Role.Type.Navigator);
+        _roles.add(Role.Type.WaterCarrier);
     }
 
-    public Player.Role next(){
+    public Role.Type next(){
         if(_roles.size() > 0) {
             Random rand = new Random();
             int index = rand.nextInt(_roles.size());

@@ -21,7 +21,28 @@ public class DesertTile {
     public int yPos;
     public int numberOfSandTiles = 0;
     public Status status = Status.Unflipped;
-    public Part part = Part.None;
-    public boolean isPassable = true;
+    public Part partHint = Part.None;
+    public Part partContained = Part.None;
+    public boolean highlighted = false;
 
+    public boolean isPassable(){
+        return numberOfSandTiles <= 1 && type != Type.Storm;
+    }
+
+    public boolean flipTile(){
+        if(numberOfSandTiles <= 0 && status == Status.Unflipped){
+            status = Status.Flipped;
+            return true;
+        }
+        return false;
+    }
+
+    public boolean addSandTile(){
+        numberOfSandTiles++;
+        return numberOfSandTiles > 1;
+    }
+
+    public void discoverPart(Part part){
+        partContained = part;
+    }
 }

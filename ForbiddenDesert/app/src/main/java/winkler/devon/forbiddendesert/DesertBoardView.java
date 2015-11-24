@@ -4,6 +4,8 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
+import android.view.MotionEvent;
 import android.view.View;
 
 /**
@@ -14,12 +16,26 @@ public class DesertBoardView extends View {
         super(context);
     }
 
-    DesertTile [] _board;
+    public interface TileClickListener{
+        public void onTileClick(int xPos, int yPos);
+    }
 
+    DesertTile [] _board;
+    Player[] _players;
+    TileClickListener _tileClickListener;
 
     public void setBoard(DesertTile[]board) {
         _board = board;
         invalidate();
+    }
+
+    public void setPlayers(Player[] players){
+        _players = players;
+        invalidate();
+    }
+
+    public void setTileClickListener(TileClickListener listener){
+        _tileClickListener = listener;
     }
 
     @Override
@@ -50,9 +66,27 @@ public class DesertBoardView extends View {
     }
 
     @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        int x = (int)event.getX();
+        int y = (int)event.getY();
+        int squareWidth = getWidth()/5;
+        int squareHeight = squareWidth;
+        int newX = x/squareWidth;
+        int newY = y/squareHeight;
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                if (_tileClickListener != null) {
+                    _tileClickListener.onTileClick(newX, newY);
+                }
+            }
+        return true;
+    }
+
+    @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         Paint paint = new Paint();
+        Paint highlightPaint = new Paint();
+        highlightPaint.setColor(0xAAFFFFFF);
         int squareWidth = getWidth() / 5;
         int squareHeight = getHeight() / 5;
         int squareMargin = 2;
@@ -61,8 +95,8 @@ public class DesertBoardView extends View {
             DesertTile.Type type = tile.type;
             DesertTile.Status status = tile.status;
             boolean isBuried = tile.numberOfSandTiles > 0;
-            boolean isImpassable = !tile.isPassable;
-            int color = 0xFFFFFF00;
+            boolean isImpassable = !tile.isPassable();
+            int color = 0xFFCC9900;
             int paddingTop = tile.yPos == 0 ? getPaddingTop() : 0;
             int paddingRight = tile.xPos == 4 ? getPaddingRight() : 0;
             int paddingBottom = tile.yPos == 4 ? getPaddingBottom() : 0;
@@ -91,6 +125,60 @@ public class DesertBoardView extends View {
             squareRect.right = getWidth() - squareWidth * (5 - (tile.xPos + 1)) - squareMargin - paddingRight;
             squareRect.bottom = getHeight() - squareHeight * (5 - (tile.yPos + 1)) - squareMargin - paddingBottom;
             canvas.drawRect(squareRect, paint);
+            if(tile.highlighted) {
+                canvas.drawRect(squareRect, highlightPaint);
+            }
+        }
+
+        for(int j = 0; j < _players.length; j++){
+            Player player = _players[j];
+            int playerColor = player._role.getColor();
+            int id = player._id;
+            float xOffset = 0;
+            float yOffset = 0;
+            int paddingTop = player.yPos == 0 ? getPaddingTop() : 0;
+            int paddingRight = player.xPos == 4 ? getPaddingRight() : 0;
+            int paddingBottom = player.yPos == 4 ? getPaddingBottom() : 0;
+            int paddingLeft = player.xPos == 0 ? getPaddingLeft() : 0;
+            Rect squareRect = new Rect();
+            squareRect.top = paddingTop + player.yPos * squareHeight + squareMargin;
+            squareRect.left = paddingLeft + player.xPos * squareWidth + squareMargin;
+            squareRect.right = getWidth() - squareWidth * (5 - (player.xPos + 1)) - squareMargin - paddingRight;
+            squareRect.bottom = getHeight() - squareHeight * (5 - (player.yPos + 1)) - squareMargin - paddingBottom;
+            float playerSquareWidth = squareRect.right - squareRect.left;
+            float playerSquareHeight = squareRect.bottom - squareRect.top;
+            float playerWidth = playerSquareWidth/3.0f;
+            float playerHeight = playerSquareHeight/3.0f;
+            switch (id){
+                case 0:
+                    xOffset = 0 + squareMargin;
+                    yOffset = 0 + squareMargin;
+                    break;
+                case 1:
+                    xOffset = playerWidth * 2 - squareMargin;
+                    yOffset = 0 + squareMargin;
+                    break;
+                case 2:
+                    xOffset = 0 + squareMargin;
+                    yOffset = playerHeight * 2 - squareMargin;
+                    break;
+                case 3:
+                    xOffset = playerWidth * 2 - squareMargin;
+                    yOffset = playerHeight * 2 - squareMargin;
+                    break;
+                case 4:
+                    xOffset = playerWidth;
+                    yOffset = playerHeight;
+                    break;
+            }
+            RectF ovalRect = new RectF();
+            ovalRect.top = squareRect.top+yOffset;
+            ovalRect.left = squareRect.left+xOffset;
+            ovalRect.right = ovalRect.left+playerWidth;
+            ovalRect.bottom = ovalRect.top+playerHeight;
+            Paint playerPaint = new Paint();
+            playerPaint.setColor(playerColor);
+            canvas.drawOval(ovalRect, playerPaint);
         }
     }
 }

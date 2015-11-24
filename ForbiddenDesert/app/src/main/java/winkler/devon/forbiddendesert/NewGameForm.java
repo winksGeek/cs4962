@@ -18,7 +18,7 @@ public class NewGameForm extends Activity {
     public void startNewGame(View button){
         ForbiddenDataModel model = ForbiddenDataModel.getInstance();
         Intent newGameIntent = new Intent(this, GameActivity.class);
-        newGameIntent.putExtra(GameActivity.GAME_ID, model.addGame(2));
+        newGameIntent.putExtra(GameActivity.GAME_ID, model.addGame(5));
         startActivity(newGameIntent);
     }
 }

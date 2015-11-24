@@ -110,14 +110,13 @@ public class TileDeck {
     private DesertTile getPartTile(DesertTile.Type type, DesertTile.Part part){
         DesertTile partTile = new DesertTile();
         partTile.type = type;
-        partTile.part = part;
+        partTile.partHint = part;
         return partTile;
     }
 
     public DesertTile getStormTile(){
         DesertTile stormTile = new DesertTile();
         stormTile.type = DesertTile.Type.Storm;
-        stormTile.isPassable = false;
         return stormTile;
     }
 
