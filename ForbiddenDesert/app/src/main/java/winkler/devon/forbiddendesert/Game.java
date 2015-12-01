@@ -7,6 +7,7 @@ import java.util.Calendar;
  */
 public class Game {
     private DesertTile [] _board;
+    private DesertTile _crashTile;
     private String _id;
     private Calendar _gameStarted;
     private Player[] _players;
@@ -43,6 +44,9 @@ public class Game {
                 j++;
             }
             board[i] = desertTile;
+            if(desertTile.type == DesertTile.Type.Crash){
+                _crashTile = desertTile;
+            }
         }
         return board;
     }
@@ -79,6 +83,18 @@ public class Game {
         Player player = _players[id];
         player.xPos = xPos;
         player.yPos = yPos;
+    }
+
+    public DesertTile getCrashTile(){
+        if(_crashTile != null){
+            return _crashTile;
+        }
+        int i = 0;
+        while(i < _board.length && _board[i].type != DesertTile.Type.Crash){
+            i++;
+        }
+        DesertTile tile = _board[i];
+        return tile;
     }
 
     public void moveStorm(StormCard.Direction direction, StormCard.Places places){

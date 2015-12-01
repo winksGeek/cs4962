@@ -20,9 +20,11 @@ public class ForbiddenDataModel {
     private ForbiddenDataModel(){
         _games = new HashMap<>();
     }
+
     public void setGames(HashMap <String, Game> games){
         _games = games;
     }
+
     public String addGame(int numberOfPlayers){
         HashMap<Integer, Role.Type> roles = new HashMap<>();
         RoleRandom rand = new RoleRandom();
@@ -31,18 +33,23 @@ public class ForbiddenDataModel {
         }
         return addGame(numberOfPlayers, roles);
     }
+
     public String addGame(int numberOfPlayers, HashMap<Integer, Role.Type> roles){
         String gameId = generateGameId();
         Game newGame = new Game(gameId, numberOfPlayers);
+        DesertTile crashTile = newGame.getCrashTile();
         for(int i = 0; i < numberOfPlayers; i++){
             Player player = new Player(new Role(roles.get(i)));
             player._id = i;
             player._name = "Player " + i;
+            player.xPos = crashTile.xPos;
+            player.yPos = crashTile.yPos;
             newGame.addPlayer(player);
         }
         _games.put(gameId, newGame);
         return gameId;
     }
+
     public DesertTile[] getBoard(String gameId){
         Game game = _games.get(gameId);
         return game.get_board();

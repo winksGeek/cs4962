@@ -5,6 +5,8 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -101,30 +103,36 @@ public class DesertBoardView extends View {
             int paddingRight = tile.xPos == 4 ? getPaddingRight() : 0;
             int paddingBottom = tile.yPos == 4 ? getPaddingBottom() : 0;
             int paddingLeft = tile.xPos == 0 ? getPaddingLeft() : 0;
+            Drawable drawable = getResources().getDrawable(R.drawable.desert_tile_back, null);
             switch(status){
                 case Unflipped:
                     switch (type) {
                         case Oasis:
                         case Mirage:
-                            color = 0xFF0000FF;
+//                            color = 0xFF0000FF;
+                            drawable = getResources().getDrawable(R.drawable.water_tile_back, null);
                             break;
                         case Crash:
-                            color = 0xFFFF0000;
+//                            color = 0xFFFF0000;
+                            drawable = getResources().getDrawable(R.drawable.crash_tile_back, null);
                             break;
                         case Storm:
-                            color = 0xFF000000;
+//                            color = 0xFF000000;
+                            drawable = getResources().getDrawable(R.drawable.storm_tile, null);
                     }
                     break;
                 case Flipped:
                     break;
             }
-            paint.setColor(color);
+//            paint.setColor(color);
             Rect squareRect = new Rect();
             squareRect.top = paddingTop + tile.yPos * squareHeight + squareMargin;
             squareRect.left = paddingLeft + tile.xPos * squareWidth + squareMargin;
             squareRect.right = getWidth() - squareWidth * (5 - (tile.xPos + 1)) - squareMargin - paddingRight;
             squareRect.bottom = getHeight() - squareHeight * (5 - (tile.yPos + 1)) - squareMargin - paddingBottom;
-            canvas.drawRect(squareRect, paint);
+            drawable.setBounds(squareRect);
+            drawable.draw(canvas);
+//            canvas.drawRect(squareRect, paint);
             if(tile.highlighted) {
                 canvas.drawRect(squareRect, highlightPaint);
             }
