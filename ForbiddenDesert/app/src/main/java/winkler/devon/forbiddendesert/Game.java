@@ -1,5 +1,6 @@
 package winkler.devon.forbiddendesert;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 
 /**
@@ -21,6 +22,7 @@ public class Game {
         _board = generateNewBoard();
         _players = new Player[numberOfPlayers];
         _stormIndex = 12;
+        placeSandTiles();
     }
 
     public DesertTile[] get_board(){
@@ -51,8 +53,24 @@ public class Game {
         return board;
     }
 
+    private void placeSandTiles(){
+        _board[2].addSandTile();
+        _board[6].addSandTile();
+        _board[8].addSandTile();
+        _board[10].addSandTile();
+        _board[14].addSandTile();
+        _board[16].addSandTile();
+        _board[18].addSandTile();
+        _board[22].addSandTile();
+
+    }
+
     public void addPlayer(Player player){
         _players[player._id] = player;
+    }
+
+    public Player getCurrentPlayer(){
+        return _players[_currentTurn];
     }
 
     public boolean sunBeatsDown(){
@@ -77,6 +95,11 @@ public class Game {
 
     public void movePlayer(int xPos, int yPos){
         movePlayer(_currentTurn, xPos, yPos);
+    }
+
+    public void movePlayer(Player player, int xPos, int yPos){
+        player.xPos = xPos;
+        player.yPos = yPos;
     }
 
     public void movePlayer(int id, int xPos, int yPos){
@@ -127,18 +150,41 @@ public class Game {
         }
     }
 
+    private ArrayList<Player> getPlayersAt(int xPos, int yPos) {
+        ArrayList<Player> players = new ArrayList<>();
+        for(int i = 0; i < _players.length; i++){
+            Player player = _players[i];
+            if(player.xPos == xPos && player.yPos == yPos){
+                players.add(player);
+            }
+        }
+        return players;
+    }
+
+    private void movePlayersOnTile(ArrayList<Player> players, int xPos, int yPos){
+        for(Player player:players){
+            movePlayer(player, xPos, yPos);
+        }
+    }
+
     private void moveStormWest(int placesInt) {
         DesertTile stormTile = _board[_stormIndex];
         if(placesInt == 0 || (stormTile.xPos - 1) < 0)
             return;
-        int index = 0;
-        while(index < _board.length && !((_board[index].xPos == stormTile.xPos - 1) && (stormTile.yPos == _board[index].yPos))){
-            index++;
-        }
-        DesertTile swapTile = _board[index];
+        int newIndex = stormTile.xPos-1 + 5*stormTile.yPos;
+        DesertTile swapTile = _board[newIndex];
+        ArrayList<Player>playersOnTile = getPlayersAt(swapTile.xPos, swapTile.yPos);
+
         int tempX = swapTile.xPos;
         swapTile.xPos = stormTile.xPos;
         stormTile.xPos = tempX;
+
+        swapTile.addSandTile();
+        movePlayersOnTile(playersOnTile, swapTile.xPos, swapTile.yPos);
+
+        _board[newIndex] = _board[_stormIndex];
+        _board[_stormIndex] = swapTile;
+        _stormIndex = newIndex;
         moveStormWest(placesInt - 1);
     }
 
@@ -146,14 +192,21 @@ public class Game {
         DesertTile stormTile = _board[_stormIndex];
         if(placesInt == 0 || (stormTile.yPos + 1) > 4)
             return;
-        int index = 0;
-        while(index < _board.length && !((_board[index].xPos == stormTile.xPos) && (stormTile.yPos+1 == _board[index].yPos))){
-            index++;
-        }
-        DesertTile swapTile = _board[index];
+        int newIndex = stormTile.xPos + 5*(stormTile.yPos+1);
+        DesertTile swapTile = _board[newIndex];
+        ArrayList<Player>playersOnTile = getPlayersAt(swapTile.xPos, swapTile.yPos);
+
         int tempY = swapTile.yPos;
         swapTile.yPos = stormTile.yPos;
         stormTile.yPos = tempY;
+
+        swapTile.addSandTile();
+        movePlayersOnTile(playersOnTile, swapTile.xPos, swapTile.yPos);
+
+        _board[newIndex] = _board[_stormIndex];
+        _board[_stormIndex] = swapTile;
+        _stormIndex = newIndex;
+
         moveStormSouth(placesInt - 1);
     }
 
@@ -161,14 +214,21 @@ public class Game {
         DesertTile stormTile = _board[_stormIndex];
         if(placesInt == 0 || (stormTile.xPos + 1) > 4)
             return;
-        int index = 0;
-        while(index < _board.length && !((_board[index].xPos == stormTile.xPos + 1) && (stormTile.yPos == _board[index].yPos))){
-            index++;
-        }
-        DesertTile swapTile = _board[index];
+        int newIndex = stormTile.xPos+ 1 + 5*stormTile.yPos;
+        DesertTile swapTile = _board[newIndex];
+        ArrayList<Player>playersOnTile = getPlayersAt(swapTile.xPos, swapTile.yPos);
+
         int tempX = swapTile.xPos;
         swapTile.xPos = stormTile.xPos;
         stormTile.xPos = tempX;
+
+        swapTile.addSandTile();
+        movePlayersOnTile(playersOnTile, swapTile.xPos, swapTile.yPos);
+
+        _board[newIndex] = _board[_stormIndex];
+        _board[_stormIndex] = swapTile;
+        _stormIndex = newIndex;
+
         moveStormEast(placesInt - 1);
     }
 
@@ -176,14 +236,21 @@ public class Game {
         DesertTile stormTile = _board[_stormIndex];
         if(placesInt == 0 || (stormTile.yPos - 1) < 0)
             return;
-        int index = 0;
-        while(index < _board.length && !((_board[index].xPos == stormTile.xPos) && (stormTile.yPos-1 == _board[index].yPos))){
-            index++;
-        }
-        DesertTile swapTile = _board[index];
+        int newIndex = stormTile.xPos + 5*(stormTile.yPos-1);
+        DesertTile swapTile = _board[newIndex];
+        ArrayList<Player>playersOnTile = getPlayersAt(swapTile.xPos, swapTile.yPos);
+
         int tempY = swapTile.yPos;
         swapTile.yPos = stormTile.yPos;
         stormTile.yPos = tempY;
+
+        swapTile.addSandTile();
+        movePlayersOnTile(playersOnTile, swapTile.xPos, swapTile.yPos);
+
+        _board[newIndex] = _board[_stormIndex];
+        _board[_stormIndex] = swapTile;
+        _stormIndex = newIndex;
+
         moveStormNorth(placesInt - 1);
     }
 }

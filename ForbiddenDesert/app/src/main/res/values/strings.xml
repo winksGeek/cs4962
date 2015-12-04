@@ -27,5 +27,9 @@
     <string name="meteorologist">Meteorologist</string>
     <string name="navigator">Navigator</string>
     <string name="water_carrier">Water Carrier</string>
+    <string name="move">Move</string>
+    <string name="remove_sand">Remove Sand</string>
+    <string name="excavate">Excavate</string>
+    <string name="pick_up_a_part">Pick Up a Part</string>
 
 </resources>

@@ -2,6 +2,7 @@ package winkler.devon.forbiddendesert;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -75,11 +76,11 @@ public class DesertBoardView extends View {
         int squareHeight = squareWidth;
         int newX = x/squareWidth;
         int newY = y/squareHeight;
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                if (_tileClickListener != null) {
-                    _tileClickListener.onTileClick(newX, newY);
-                }
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            if (_tileClickListener != null) {
+                _tileClickListener.onTileClick(newX, newY);
             }
+        }
         return true;
     }
 
@@ -135,6 +136,17 @@ public class DesertBoardView extends View {
 //            canvas.drawRect(squareRect, paint);
             if(tile.highlighted) {
                 canvas.drawRect(squareRect, highlightPaint);
+            }
+            if(tile.numberOfSandTiles > 0){
+                Drawable sandTile = getResources().getDrawable(R.drawable.sandtile, null);
+                sandTile.setBounds(squareRect);
+                sandTile.draw(canvas);
+                float textX = (float)squareRect.left + ((float)squareRect.right - (float)squareRect.left)/2.0f;
+                float textY = (float)squareRect.top + ((float)squareRect.bottom - (float)squareRect.top)/2.0f;
+                Paint textPaint = new Paint();
+                textPaint.setColor(Color.BLACK);
+                textPaint.setTextSize(45.0f);
+                canvas.drawText(tile.numberOfSandTiles + "",textX ,textY, textPaint);
             }
         }
 

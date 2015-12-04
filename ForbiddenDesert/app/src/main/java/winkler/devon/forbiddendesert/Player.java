@@ -67,4 +67,8 @@ public class Player {
             _waterLeft = _role.getMaxWater();
         }
     }
+
+    public int getNumberOfTilesAbleToRemove() {
+        return _role.getSandTileRemoveCount();
+    }
 }

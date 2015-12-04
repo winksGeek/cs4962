@@ -50,6 +50,10 @@ public class ForbiddenDataModel {
         return gameId;
     }
 
+    public DesertTile[] getBoard(){
+        return _currentGame.get_board();
+    }
+
     public DesertTile[] getBoard(String gameId){
         Game game = _games.get(gameId);
         return game.get_board();
@@ -79,10 +83,21 @@ public class ForbiddenDataModel {
     }
 
     public void movePlayer(int xPos, int yPos) {
-        _currentGame.movePlayer(xPos, yPos);
+        int index = yPos * 5 + xPos;
+        DesertTile tile = _currentGame.get_board()[index];
+        if(tile.isPassable()) {
+            _currentGame.movePlayer(xPos, yPos);
+        }
     }
 
     public void moveStorm(StormCard.Direction direction, StormCard.Places places){
         _currentGame.moveStorm(direction, places);
+    }
+
+    public void removeSand(int xPos, int yPos) {
+        int index = yPos * 5 + xPos;
+        DesertTile tile = _currentGame.get_board()[index];
+        Player player = _currentGame.getCurrentPlayer();
+        tile.removeSand(player.getNumberOfTilesAbleToRemove());
     }
 }

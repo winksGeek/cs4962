@@ -42,6 +42,13 @@ public class DesertTile {
         return numberOfSandTiles > 1;
     }
 
+    public void removeSand(int number){
+        numberOfSandTiles-=number;
+        if(numberOfSandTiles < 0) {
+            numberOfSandTiles = 0;
+        }
+    }
+
     public void discoverPart(Part part){
         partContained = part;
     }
