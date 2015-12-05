@@ -54,9 +54,18 @@ public class ForbiddenDataModel {
         return _currentGame.get_board();
     }
 
+    public Part[] getParts(){
+        return _currentGame.get_parts();
+    }
+
     public DesertTile[] getBoard(String gameId){
         Game game = _games.get(gameId);
         return game.get_board();
+    }
+
+    public Part[] getParts(String gameId){
+        Game game = _games.get(gameId);
+        return game.get_parts();
     }
 
     private String generateGameId(){
@@ -83,8 +92,7 @@ public class ForbiddenDataModel {
     }
 
     public void movePlayer(int xPos, int yPos) {
-        int index = yPos * 5 + xPos;
-        DesertTile tile = _currentGame.get_board()[index];
+        DesertTile tile = getTileFromBoard(xPos, yPos);
         if(tile.isPassable()) {
             _currentGame.movePlayer(xPos, yPos);
         }
@@ -95,9 +103,38 @@ public class ForbiddenDataModel {
     }
 
     public void removeSand(int xPos, int yPos) {
-        int index = yPos * 5 + xPos;
-        DesertTile tile = _currentGame.get_board()[index];
+        DesertTile tile = getTileFromBoard(xPos, yPos);
         Player player = _currentGame.getCurrentPlayer();
         tile.removeSand(player.getNumberOfTilesAbleToRemove());
+    }
+
+    public void excavate(int xPos, int yPos) {
+        DesertTile tile = getTileFromBoard(xPos, yPos);
+        Player player = _currentGame.getCurrentPlayer();
+//        if(player.xPos == tile.xPos && player.yPos == tile.yPos){
+            boolean flipped = tile.flipTile();
+            if(flipped) {
+                if (tile.type == DesertTile.Type.PieceColumn || tile.type == DesertTile.Type.PieceRow){
+                    _currentGame.revealPart(tile.partHint);
+                }
+            }
+//        }
+    }
+
+    public Part pickUpPart(int xPos, int yPos){
+        DesertTile tile = getTileFromBoard(xPos, yPos);
+        Player player = _currentGame.getCurrentPlayer();
+        if(player.xPos == tile.xPos && player.yPos == tile.yPos){
+            Part partClaimed = tile.claimPart();
+            _currentGame.collectPart(partClaimed._type);
+            return partClaimed;
+        }
+        return null;
+    }
+
+    public DesertTile getTileFromBoard(int xPos, int yPos){
+        int index = yPos * 5 + xPos;
+        DesertTile tile = _currentGame.get_board()[index];
+        return tile;
     }
 }

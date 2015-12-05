@@ -12,6 +12,7 @@ public class Game {
     private String _id;
     private Calendar _gameStarted;
     private Player[] _players;
+    private Part [] _parts;
     private int _currentTurn;
     private int _stormIndex;
 
@@ -23,10 +24,19 @@ public class Game {
         _players = new Player[numberOfPlayers];
         _stormIndex = 12;
         placeSandTiles();
+        _parts = new Part[4];
+        _parts[0] = new Part(Part.Type.Crystal,0,0);
+        _parts[1] = new Part(Part.Type.Propeller,1,0);
+        _parts[2] = new Part(Part.Type.Navigation,2,0);
+        _parts[3] = new Part(Part.Type.Engine,3,0);
     }
 
     public DesertTile[] get_board(){
         return _board;
+    }
+
+    public Part[] get_parts(){
+        return _parts;
     }
 
     private DesertTile[] generateNewBoard(){
@@ -252,5 +262,37 @@ public class Game {
         _stormIndex = newIndex;
 
         moveStormNorth(placesInt - 1);
+    }
+
+    public void revealPart(Part.Type type){
+        DesertTile columnTile = null;
+        DesertTile rowTile = null;
+        for(int i = 0; i < _board.length; i++){
+            DesertTile tile = _board[i];
+            if(tile.partHint == type && tile.status == DesertTile.Status.Flipped){
+                if(tile.type == DesertTile.Type.PieceColumn) {
+                    columnTile = tile;
+                }
+                else {
+                    rowTile = tile;
+                }
+            }
+        }
+        if(columnTile != null && rowTile != null){
+            int xPos = columnTile.xPos;
+            int yPos = rowTile.yPos;
+            int index = yPos * 5 + xPos;
+            DesertTile partTile = _board[index];
+            partTile.discoverPart(new Part(type, xPos, yPos));
+        }
+    }
+
+    public void collectPart(Part.Type type){
+        for(int i = 0; i < _parts.length; i++){
+            Part part = _parts[i];
+            if(part._type == type){
+                part.collected = true;
+            }
+        }
     }
 }

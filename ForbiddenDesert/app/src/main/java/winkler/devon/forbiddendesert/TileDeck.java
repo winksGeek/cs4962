@@ -44,20 +44,20 @@ public class TileDeck {
         ArrayList<DesertTile> tiles = new ArrayList<>();
 
         //Engine
-        tiles.add(getPartTile(DesertTile.Type.PieceRow, DesertTile.Part.Engine));
-        tiles.add(getPartTile(DesertTile.Type.PieceColumn, DesertTile.Part.Engine));
+        tiles.add(getPartTile(DesertTile.Type.PieceRow, Part.Type.Engine));
+        tiles.add(getPartTile(DesertTile.Type.PieceColumn, Part.Type.Engine));
 
         //Crystal
-        tiles.add(getPartTile(DesertTile.Type.PieceRow, DesertTile.Part.Crystal));
-        tiles.add(getPartTile(DesertTile.Type.PieceColumn, DesertTile.Part.Crystal));
+        tiles.add(getPartTile(DesertTile.Type.PieceRow, Part.Type.Crystal));
+        tiles.add(getPartTile(DesertTile.Type.PieceColumn, Part.Type.Crystal));
 
         //Propeller
-        tiles.add(getPartTile(DesertTile.Type.PieceRow, DesertTile.Part.Propeller));
-        tiles.add(getPartTile(DesertTile.Type.PieceColumn, DesertTile.Part.Propeller));
+        tiles.add(getPartTile(DesertTile.Type.PieceRow, Part.Type.Propeller));
+        tiles.add(getPartTile(DesertTile.Type.PieceColumn, Part.Type.Propeller));
 
         //Navigation
-        tiles.add(getPartTile(DesertTile.Type.PieceRow, DesertTile.Part.Navigation));
-        tiles.add(getPartTile(DesertTile.Type.PieceColumn, DesertTile.Part.Navigation));
+        tiles.add(getPartTile(DesertTile.Type.PieceRow, Part.Type.Navigation));
+        tiles.add(getPartTile(DesertTile.Type.PieceColumn, Part.Type.Navigation));
 
         return tiles;
     }
@@ -107,7 +107,7 @@ public class TileDeck {
         return crashTile;
     }
 
-    private DesertTile getPartTile(DesertTile.Type type, DesertTile.Part part){
+    private DesertTile getPartTile(DesertTile.Type type, Part.Type part){
         DesertTile partTile = new DesertTile();
         partTile.type = type;
         partTile.partHint = part;

@@ -6,7 +6,6 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
@@ -95,36 +94,12 @@ public class DesertBoardView extends View {
         int squareMargin = 2;
         for (int i = 0; i < _board.length; i++) {
             DesertTile tile = _board[i];
-            DesertTile.Type type = tile.type;
-            DesertTile.Status status = tile.status;
-            boolean isBuried = tile.numberOfSandTiles > 0;
-            boolean isImpassable = !tile.isPassable();
             int color = 0xFFCC9900;
             int paddingTop = tile.yPos == 0 ? getPaddingTop() : 0;
             int paddingRight = tile.xPos == 4 ? getPaddingRight() : 0;
             int paddingBottom = tile.yPos == 4 ? getPaddingBottom() : 0;
             int paddingLeft = tile.xPos == 0 ? getPaddingLeft() : 0;
-            Drawable drawable = getResources().getDrawable(R.drawable.desert_tile_back, null);
-            switch(status){
-                case Unflipped:
-                    switch (type) {
-                        case Oasis:
-                        case Mirage:
-//                            color = 0xFF0000FF;
-                            drawable = getResources().getDrawable(R.drawable.water_tile_back, null);
-                            break;
-                        case Crash:
-//                            color = 0xFFFF0000;
-                            drawable = getResources().getDrawable(R.drawable.crash_tile_back, null);
-                            break;
-                        case Storm:
-//                            color = 0xFF000000;
-                            drawable = getResources().getDrawable(R.drawable.storm_tile, null);
-                    }
-                    break;
-                case Flipped:
-                    break;
-            }
+            Drawable drawable = getDrawableForTile(tile);
 //            paint.setColor(color);
             Rect squareRect = new Rect();
             squareRect.top = paddingTop + tile.yPos * squareHeight + squareMargin;
@@ -148,8 +123,44 @@ public class DesertBoardView extends View {
                 textPaint.setTextSize(45.0f);
                 canvas.drawText(tile.numberOfSandTiles + "",textX ,textY, textPaint);
             }
+            if(tile.partContained != null){
+                Drawable part = getDrawableForPart(tile.partContained);
+                float partSquareWidth = squareRect.right - squareRect.left;
+                float partSquareHeight = squareRect.bottom - squareRect.top;
+                float partWidth = partSquareWidth/2.0f;
+                float partHeight = partSquareHeight/2.0f;
+                Rect partRect = new Rect();
+                float xOffset = partWidth - squareMargin;
+                float yOffset = 0 + squareMargin;
+                partRect.top = (int)(squareRect.top+yOffset);
+                partRect.left = (int)(squareRect.left+xOffset);
+                partRect.right = (int)(partRect.left+partWidth);
+                partRect.bottom = (int)(partRect.top+partHeight);
+                if(part != null) {
+                    part.setBounds(partRect);
+                    part.draw(canvas);
+                }
+            }
         }
 
+        drawPlayers(canvas, squareWidth, squareHeight, squareMargin);
+    }
+
+    private Drawable getDrawableForPart(Part partContained) {
+        switch (partContained._type){
+            case Propeller:
+                return getResources().getDrawable(R.drawable.propeller_part_collected,null);
+            case Engine:
+                return getResources().getDrawable(R.drawable.engine_part_collected,null);
+            case Navigation:
+                return getResources().getDrawable(R.drawable.navigation_part_collected,null);
+            case Crystal:
+                return getResources().getDrawable(R.drawable.crystal_part_collected,null);
+        }
+        return null;
+    }
+
+    private void drawPlayers(Canvas canvas, int squareWidth, int squareHeight, int squareMargin) {
         for(int j = 0; j < _players.length; j++){
             Player player = _players[j];
             int playerColor = player._role.getColor();
@@ -200,5 +211,82 @@ public class DesertBoardView extends View {
             playerPaint.setColor(playerColor);
             canvas.drawOval(ovalRect, playerPaint);
         }
+    }
+
+    private Drawable getDrawableForTile(DesertTile tile) {
+        Drawable drawable = getResources().getDrawable(R.drawable.desert_tile_back, null);
+        DesertTile.Type type = tile.type;
+        DesertTile.Status status = tile.status;
+        switch(status){
+            case Unflipped:
+                switch (type) {
+                    case Oasis:
+                    case Mirage:
+//                            color = 0xFF0000FF;
+                        drawable = getResources().getDrawable(R.drawable.water_tile_back, null);
+                        break;
+                    case Crash:
+//                            color = 0xFFFF0000;
+                        drawable = getResources().getDrawable(R.drawable.crash_tile_back, null);
+                        break;
+                    case Storm:
+//                            color = 0xFF000000;
+                        drawable = getResources().getDrawable(R.drawable.storm_tile, null);
+                }
+                break;
+            case Flipped:
+                switch(type){
+                    case PieceColumn:
+                        switch (tile.partHint){
+                            case Propeller:
+                                drawable = getResources().getDrawable(R.drawable.yellow_vertical, null);
+                                break;
+                            case Crystal:
+                                drawable = getResources().getDrawable(R.drawable.orange_vertical, null);
+                                break;
+                            case Navigation:
+                                drawable = getResources().getDrawable(R.drawable.red_vertical, null);
+                                break;
+                            case Engine:
+                                drawable = getResources().getDrawable(R.drawable.silver_vertical, null);
+                                break;
+                        }
+                        break;
+                    case PieceRow:
+                        switch (tile.partHint){
+                            case Propeller:
+                                drawable = getResources().getDrawable(R.drawable.yellow_horizontal, null);
+                                break;
+                            case Crystal:
+                                drawable = getResources().getDrawable(R.drawable.orange_horizontal, null);
+                                break;
+                            case Navigation:
+                                drawable = getResources().getDrawable(R.drawable.red_horizontal, null);
+                                break;
+                            case Engine:
+                                drawable = getResources().getDrawable(R.drawable.silver_horizontal, null);
+                                break;
+                        }
+                        break;
+                    case Item:
+                    case Crash:
+                        drawable = getResources().getDrawable(R.drawable.item_tile, null);
+                        break;
+                    case Landing:
+                        drawable = getResources().getDrawable(R.drawable.landing_tile, null);
+                        break;
+                    case Tunnel:
+                        drawable = getResources().getDrawable(R.drawable.tunnel_tile, null);
+                        break;
+                    case Mirage:
+                        drawable = getResources().getDrawable(R.drawable.mirage_tile, null);
+                        break;
+                    case Oasis:
+                        drawable = getResources().getDrawable(R.drawable.oasis_tile, null);
+                        break;
+                }
+                break;
+        }
+        return drawable;
     }
 }

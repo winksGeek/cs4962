@@ -2,18 +2,22 @@ package winkler.devon.forbiddendesert;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Color;
+import android.media.Image;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ToggleButton;
 
 public class GameActivity extends Activity implements DesertBoardView.TileClickListener {
     public static final String GAME_ID = "GAME_ID";
     DesertBoardView _boardView;
+    PartsCollectedView _partsCollected;
     public static enum Mode {
         Move, Remove, Excavate, Pick
     }
@@ -33,6 +37,19 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
         model.setCurrentGame(gameId);
         int numOfPlayers = 5;
 
+        //region Parts Collected
+        LinearLayout partsCollectedLayout = new LinearLayout(this);
+        partsCollectedLayout.setOrientation(LinearLayout.HORIZONTAL);
+        partsCollectedLayout.setGravity(Gravity.CENTER);
+
+        _partsCollected = new PartsCollectedView(this);
+        _partsCollected.setParts(model.getParts(gameId));
+        partsCollectedLayout.addView(_partsCollected, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, 0));
+
+        boardLayout.addView(partsCollectedLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
+        //endregion
+
+        //region Action Bar
         LinearLayout actionBarLayout = new LinearLayout(this);
         actionBarLayout.setOrientation(LinearLayout.HORIZONTAL);
         actionBarLayout.setGravity(Gravity.CENTER);
@@ -66,13 +83,17 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
         actionBarLayout.addView(partAction, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT, 0));
 
         boardLayout.addView(actionBarLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
+        //endregion
 
+        //region Board
         _boardView = new DesertBoardView(this);
         _boardView.setPadding(5, 5, 5, 5);
         _boardView.setBoard(model.getBoard(gameId));
         _boardView.setTileClickListener(this);
         boardLayout.addView(_boardView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
+        //endregion
 
+        //region Players
         LinearLayout playerLayout = new LinearLayout(this);
         RoleRandom rand = new RoleRandom();
         Player [] players = model.getPlayersForGame(gameId);
@@ -84,6 +105,7 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
         }
         _boardView.setPlayers(model.getPlayersForGame(gameId));
         boardLayout.addView(playerLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
+        //endregion
 
         moveAction.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -141,6 +163,16 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
         if(_currentMode == Mode.Remove) {
             model.removeSand(xPos, yPos);
             _boardView.setBoard(model.getBoard());
+        }
+        if(_currentMode == Mode.Excavate){
+            model.excavate(xPos, yPos);
+            _boardView.setBoard(model.getBoard());
+        }
+        if(_currentMode == Mode.Pick){
+            Part part = model.pickUpPart(xPos, yPos);
+            _boardView.setBoard(model.getBoard());
+            _partsCollected.setParts(model.getParts());
+
         }
     }
 }

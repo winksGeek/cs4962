@@ -12,17 +12,14 @@ public class DesertTile {
     public static enum Status{
         Flipped, Unflipped
     }
-    public static enum Part{
-        None, Propeller, Engine, Crystal, Navigation
-    }
 
     public Type type;
     public int xPos;
     public int yPos;
     public int numberOfSandTiles = 0;
     public Status status = Status.Unflipped;
-    public Part partHint = Part.None;
-    public Part partContained = Part.None;
+    public Part.Type partHint = Part.Type.None;
+    public Part partContained = null;
     public boolean highlighted = false;
 
     public boolean isPassable(){
@@ -38,7 +35,11 @@ public class DesertTile {
     }
 
     public boolean addSandTile(){
-        numberOfSandTiles++;
+        return addSandTile(1);
+    }
+
+    public boolean addSandTile(int number){
+        numberOfSandTiles += number;
         return numberOfSandTiles > 1;
     }
 
@@ -51,5 +52,11 @@ public class DesertTile {
 
     public void discoverPart(Part part){
         partContained = part;
+    }
+
+    public Part claimPart(){
+        Part partCopy = partContained;
+        partContained = null;
+        return partCopy;
     }
 }
