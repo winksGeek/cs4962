@@ -16,9 +16,7 @@ public class StormDeck {
 
     public StormDeck(){
         _cards = new ArrayList<StormCard>();
-        _cards.addAll(getStormPicksUpCards());
-        _cards.addAll(getSunBeatsDownCards());
-        _cards.addAll(getStormMovesCards());
+        fillDeck();
     }
 
     private ArrayList<StormCard> getStormPicksUpCards(){
@@ -105,9 +103,20 @@ public class StormDeck {
         return card;
     }
 
+    private void fillDeck(){
+        _cards.addAll(getStormPicksUpCards());
+        _cards.addAll(getSunBeatsDownCards());
+        _cards.addAll(getStormMovesCards());
+    }
+
     public StormCard getNext(){
         Random rand = new Random();
         int index = rand.nextInt(_cards.size());
-        return _cards.remove(index);
+        StormCard card = _cards.remove(index);
+        if(_cards.size() == 0){
+            fillDeck();
+        }
+        return card;
     }
+
 }

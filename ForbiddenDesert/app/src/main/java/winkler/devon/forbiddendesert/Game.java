@@ -1,5 +1,7 @@
 package winkler.devon.forbiddendesert;
 
+import android.widget.Toast;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 
@@ -7,6 +9,7 @@ import java.util.Calendar;
  * Created by devonwinkler on 11/16/15.
  */
 public class Game {
+
     private DesertTile [] _board;
     private DesertTile _crashTile;
     private String _id;
@@ -14,12 +17,21 @@ public class Game {
     private Player[] _players;
     private Part [] _parts;
     private int _currentTurn;
+    private boolean _stormActive;
     private int _stormIndex;
+    private StormDeck _stormDeck;
+    private ItemDeck _itemDeck;
+    private int [] _stormCardsPerLevel;
+    private int _stormLevel;
+    private int _cardsToDraw;
+    private int _sandTilesLeft;
+    private String gameOver;
 
     public Game(String id, int numberOfPlayers){
         _currentTurn = 0;
         _id = id;
         _gameStarted = Calendar.getInstance();
+        _sandTilesLeft = 48;
         _board = generateNewBoard();
         _players = new Player[numberOfPlayers];
         _stormIndex = 12;
@@ -29,6 +41,29 @@ public class Game {
         _parts[1] = new Part(Part.Type.Propeller,1,0);
         _parts[2] = new Part(Part.Type.Navigation,2,0);
         _parts[3] = new Part(Part.Type.Engine,3,0);
+        _stormDeck = new StormDeck();
+        _itemDeck = new ItemDeck();
+        _stormActive = false;
+        _stormCardsPerLevel = fillStormLevels(numberOfPlayers);
+        _stormLevel = 0;
+        _cardsToDraw = 0;
+        gameOver = "No";
+    }
+
+    private int[] fillStormLevels(int numberOfPlayers) {
+        int [] twoPlayerStormLevels = new int []{2,3,3,3,4,4,4,4,5,5,5,6,6};
+        int [] threePlayerStormLevels = new int []{2,3,3,3,3,4,4,4,4,5,5,5,6,6};
+        int [] fourPlayerStormLevels = new int []{2,3,3,3,3,4,4,4,4,5,5,5,6,6};
+        int [] fivePlayerStormLevels = new int []{2,3,3,3,3,3,4,4,4,4,5,5,5,6,6};
+        switch(numberOfPlayers){
+            case 3:
+                return threePlayerStormLevels;
+            case 4:
+                return fourPlayerStormLevels;
+            case 5:
+                return fivePlayerStormLevels;
+        }
+        return twoPlayerStormLevels;
     }
 
     public DesertTile[] get_board(){
@@ -72,6 +107,7 @@ public class Game {
         _board[16].addSandTile();
         _board[18].addSandTile();
         _board[22].addSandTile();
+        _sandTilesLeft -= 8;
 
     }
 
@@ -87,15 +123,42 @@ public class Game {
         boolean gameLost = false;
         for(int i = 0; i < _players.length; i++){
             Player player = _players[i];
-            gameLost |= player.drinkWater();
+            if(checkPlayerInOpen(player)) {
+                gameLost |= player.drinkWater();
+            }
         }
         return gameLost;
     }
 
-    public void changeTurn(){
+    private boolean checkPlayerInOpen(Player player) {
+        boolean playerInOpen = true;
+        int index = player.yPos * 5 + player.xPos;
+        DesertTile tile = _board[index];
+        if(tile.type == DesertTile.Type.Tunnel && tile.status == DesertTile.Status.Flipped) {
+            playerInOpen = false;
+        }
+        if(tile.coveredBySolarShield()){
+            playerInOpen = false;
+        }
+        return playerInOpen;
+    }
+
+    public void startStormTurn(){
+        _players[_currentTurn].setActive(false);
+        _cardsToDraw = _stormCardsPerLevel[_stormLevel];
+        _stormActive = true;
+    }
+
+    public void startNextPlayerTurn(){
+        _stormActive = false;
         _currentTurn++;
         if(_currentTurn >= _players.length){
             _currentTurn = 0;
+        }
+        _players[_currentTurn]._actionsLeft = 4;
+        _players[_currentTurn].setActive(true);
+        if(_players[_currentTurn]._placedASolarShield != null){
+            _players[_currentTurn].removeTurnTimer();
         }
     }
 
@@ -103,8 +166,8 @@ public class Game {
         return _players.clone();
     }
 
-    public void movePlayer(int xPos, int yPos){
-        movePlayer(_currentTurn, xPos, yPos);
+    public boolean movePlayer(int xPos, int yPos){
+        return movePlayer(_currentTurn, xPos, yPos);
     }
 
     public void movePlayer(Player player, int xPos, int yPos){
@@ -112,10 +175,33 @@ public class Game {
         player.yPos = yPos;
     }
 
-    public void movePlayer(int id, int xPos, int yPos){
+    public boolean movePlayer(int id, int xPos, int yPos){
         Player player = _players[id];
-        player.xPos = xPos;
-        player.yPos = yPos;
+        DesertTile playerTile = getTileFromBoard(player.xPos, player.yPos);
+        DesertTile moveTile = getTileFromBoard(xPos, yPos);
+        if(playerTile.numberOfSandTiles < 2 || player._role._type == Role.Type.Climber) {
+            if (player.checkLegalMove(xPos, yPos) || ((playerTile.type == DesertTile.Type.Tunnel && playerTile.status == DesertTile.Status.Flipped) && (moveTile.type == DesertTile.Type.Tunnel && moveTile.status == DesertTile.Status.Flipped))) {
+                player.xPos = xPos;
+                player.yPos = yPos;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void useAction(){
+        Player currentPlayer = _players[_currentTurn];
+        if(!_stormActive) {
+            currentPlayer._actionsLeft--;
+            if (currentPlayer._actionsLeft <= 0) {
+                startStormTurn();
+            }
+        }
+    }
+
+    public boolean hasActionsLeft(){
+        Player currentPlayer = _players[_currentTurn];
+        return currentPlayer._actionsLeft > 0;
     }
 
     public DesertTile getCrashTile(){
@@ -190,6 +276,7 @@ public class Game {
         stormTile.xPos = tempX;
 
         swapTile.addSandTile();
+        _sandTilesLeft--;
         movePlayersOnTile(playersOnTile, swapTile.xPos, swapTile.yPos);
 
         _board[newIndex] = _board[_stormIndex];
@@ -211,6 +298,7 @@ public class Game {
         stormTile.yPos = tempY;
 
         swapTile.addSandTile();
+        _sandTilesLeft--;
         movePlayersOnTile(playersOnTile, swapTile.xPos, swapTile.yPos);
 
         _board[newIndex] = _board[_stormIndex];
@@ -233,6 +321,7 @@ public class Game {
         stormTile.xPos = tempX;
 
         swapTile.addSandTile();
+        _sandTilesLeft--;
         movePlayersOnTile(playersOnTile, swapTile.xPos, swapTile.yPos);
 
         _board[newIndex] = _board[_stormIndex];
@@ -255,6 +344,7 @@ public class Game {
         stormTile.yPos = tempY;
 
         swapTile.addSandTile();
+        _sandTilesLeft--;
         movePlayersOnTile(playersOnTile, swapTile.xPos, swapTile.yPos);
 
         _board[newIndex] = _board[_stormIndex];
@@ -292,6 +382,97 @@ public class Game {
             Part part = _parts[i];
             if(part._type == type){
                 part.collected = true;
+            }
+        }
+        checkForWin();
+    }
+
+    public boolean checkForWin() {
+        boolean win = true;
+        for(int i = 0; i < _parts.length; i++){
+            Part part = _parts[i];
+            win = win && part.collected;
+        }
+        return win;
+    }
+
+    public StormCard dealStormCard(){
+        if(_stormActive){
+           StormCard card =  _stormDeck.getNext();
+            switch (card.type){
+                case Sun:
+                    sunBeatsDown();
+                    break;
+                case Storm:
+                    increaseStormLevel();
+                    break;
+                case Move:
+                    moveStorm(card.direction, card.places);
+                    break;
+            }
+            _cardsToDraw--;
+            if(_cardsToDraw <=0){
+                startNextPlayerTurn();
+            }
+            return card;
+        }
+        return null;
+    }
+
+    public boolean increaseStormLevel(){
+        _stormLevel++;
+        return _stormLevel >= _stormCardsPerLevel.length;
+    }
+
+    public void addItemCardToPlayersHand() {
+        Player player = _players[_currentTurn];
+        ItemCard card = _itemDeck.getNext();
+        if(card != null) {
+            player.addCardToHand(card);
+        }
+    }
+
+    public DesertTile getTileFromBoard(int xPos, int yPos){
+        int index = yPos * 5 + xPos;
+        DesertTile tile =_board[index];
+        return tile;
+    }
+
+    public boolean checkForLoss(){
+        boolean loss = false;
+        loss = loss || _sandTilesLeft <= 0;
+        loss = loss || playerDiedOfThirst();
+        loss = loss || _stormLevel >= _stormCardsPerLevel.length;
+        return loss;
+    }
+
+    private boolean playerDiedOfThirst(){
+        boolean playerDied = false;
+        for(int i = 0; i < _players.length; i++){
+            Player player = _players[i];
+            playerDied = playerDied || player.getWaterLeft() < 0;
+        }
+        return playerDied;
+    }
+
+    public void setGameOver(boolean win) {
+        if(win){
+            gameOver = "Won";
+        }else{
+            gameOver = "Lost";
+        }
+
+    }
+
+    public boolean isStormActive() {
+        return _stormActive;
+    }
+
+    public void addWaterToPlayersOnTile(int xPos, int yPos, int amount) {
+        for(int i = 0; i < _players.length; i++){
+            Player player = _players[i];
+            if(player.xPos == xPos && player.yPos == yPos){
+                player.addWater(amount);
             }
         }
     }

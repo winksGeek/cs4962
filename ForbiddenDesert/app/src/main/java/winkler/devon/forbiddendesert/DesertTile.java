@@ -21,6 +21,7 @@ public class DesertTile {
     public Part.Type partHint = Part.Type.None;
     public Part partContained = null;
     public boolean highlighted = false;
+    private boolean _solarSheildActive = false;
 
     public boolean isPassable(){
         return numberOfSandTiles <= 1 && type != Type.Storm;
@@ -43,11 +44,13 @@ public class DesertTile {
         return numberOfSandTiles > 1;
     }
 
-    public void removeSand(int number){
+    public boolean removeSand(int number){
+        boolean removedSand = numberOfSandTiles > 0;
         numberOfSandTiles-=number;
         if(numberOfSandTiles < 0) {
             numberOfSandTiles = 0;
         }
+        return removedSand;
     }
 
     public void discoverPart(Part part){
@@ -58,5 +61,17 @@ public class DesertTile {
         Part partCopy = partContained;
         partContained = null;
         return partCopy;
+    }
+
+    public boolean coveredBySolarShield(){
+        return _solarSheildActive;
+    }
+
+    public void placeSolarShield(){
+        _solarSheildActive = true;
+    }
+
+    public void destroySolarShield(){
+        _solarSheildActive = false;
     }
 }

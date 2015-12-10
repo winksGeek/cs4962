@@ -12,11 +12,25 @@ public class Player {
     int xPos;
     int yPos;
     private int _waterLeft;
+    int _actionsLeft;
+    boolean _active;
     private ArrayList<ItemCard> _hand;
+    DesertTile _placedASolarShield;
 
     public Player(Role role){
         _role = role;
         _waterLeft = role.getMaxWater();
+        _actionsLeft = 0;
+        _hand = new ArrayList<>();
+        _placedASolarShield = null;
+    }
+
+    public String getRoleStringForView(){
+        String role = getRoleString();
+        if(_actionsLeft > 0){
+            role += ": " + _actionsLeft + " actions";
+        }
+        return role;
     }
 
     public String getRoleString(){
@@ -50,11 +64,22 @@ public class Player {
 
     public boolean drinkWater(){
         _waterLeft--;
-        return _waterLeft >= 0;
+        return _waterLeft <= 0;
+    }
+
+    public boolean checkLegalMove(int xPos, int yPos){
+        return _role.checkLegalMove(this.xPos, this.yPos, xPos, yPos);
+    }
+
+    public boolean checkLegalSandMove(int xPos, int yPos){
+        boolean result = _role.checkLegalMove(this.xPos, this.yPos, xPos, yPos);
+        result = result || (this.xPos == xPos && this.yPos == yPos);
+        return result;
     }
 
     public void addCardToHand(ItemCard card){
         _hand.add(card);
+        card.owner = this;
     }
 
     public void addWaterFromOasis(){
@@ -68,7 +93,39 @@ public class Player {
         }
     }
 
+    public boolean isActive(){
+        return _active;
+    }
+
+    public void setActive(boolean active){
+        _active = active;
+    }
+
     public int getNumberOfTilesAbleToRemove() {
         return _role.getSandTileRemoveCount();
+    }
+
+    public ArrayList<ItemCard> getHand(){
+        return _hand;
+    }
+
+    public void setTurnTimer(DesertTile set){
+        _placedASolarShield = set;
+    }
+
+    public void removeTurnTimer(){
+        _placedASolarShield.destroySolarShield();
+        _placedASolarShield = null;
+    }
+
+    public void removeCardFromHand(ItemCard card){
+        int i;
+        for(i = 0; i < _hand.size(); i++){
+            ItemCard tempCard = _hand.get(i);
+            if(tempCard.type == card.type) {
+                break;
+            }
+        }
+        _hand.remove(i);
     }
 }

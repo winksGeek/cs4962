@@ -27,17 +27,17 @@ public class ItemDeck {
     private ArrayList<ItemCard> getItemCards(){
         ArrayList<ItemCard> cards = new ArrayList<>();
         for(int i = 0; i < NUM_BLASTER; i++){
-            cards.add(createItemCard(ItemCard.Type.Blaster));
-            if(i < NUM_THROTTLE)
-                cards.add(createItemCard(ItemCard.Type.Throttle));
-            if(i < NUM_WATER)
-                cards.add(createItemCard(ItemCard.Type.Water));
-            if(i < NUM_TERRA)
-                cards.add(createItemCard(ItemCard.Type.Terrascope));
-            if(i < NUM_SOLAR)
-                cards.add(createItemCard(ItemCard.Type.Solar));
-            if(i < NUM_JET)
-                cards.add(createItemCard(ItemCard.Type.Jet));
+            cards.add(createItemCard(ItemCard.Type.Terrascope));
+//            if(i < NUM_THROTTLE)
+//                cards.add(createItemCard(ItemCard.Type.Throttle));
+//            if(i < NUM_WATER)
+//                cards.add(createItemCard(ItemCard.Type.Water));
+//            if(i < NUM_TERRA)
+//                cards.add(createItemCard(ItemCard.Type.Terrascope));
+//            if(i < NUM_SOLAR)
+//                cards.add(createItemCard(ItemCard.Type.Solar));
+//            if(i < NUM_JET)
+//                cards.add(createItemCard(ItemCard.Type.Jet));
         }
         return cards;
     }
@@ -50,7 +50,10 @@ public class ItemDeck {
 
     public ItemCard getNext(){
         Random rand = new Random();
-        int index = rand.nextInt(_cards.size());
-        return _cards.remove(index);
+        if(_cards.size() > 0) {
+            int index = rand.nextInt(_cards.size());
+            return _cards.remove(index);
+        }
+        return null;
     }
 }

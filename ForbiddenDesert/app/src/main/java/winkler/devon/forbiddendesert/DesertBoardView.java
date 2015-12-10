@@ -109,7 +109,7 @@ public class DesertBoardView extends View {
             drawable.setBounds(squareRect);
             drawable.draw(canvas);
 //            canvas.drawRect(squareRect, paint);
-            if(tile.highlighted) {
+            if(tile.coveredBySolarShield()) {
                 canvas.drawRect(squareRect, highlightPaint);
             }
             if(tile.numberOfSandTiles > 0){
@@ -210,6 +210,16 @@ public class DesertBoardView extends View {
             Paint playerPaint = new Paint();
             playerPaint.setColor(playerColor);
             canvas.drawOval(ovalRect, playerPaint);
+            if(player.isActive()){
+                RectF highlightRect = new RectF();
+                Paint highlightPaint = new Paint();
+                highlightPaint.setColor(Color.WHITE);
+                highlightRect.top = ovalRect.top + 5;
+                highlightRect.left = ovalRect.left + 5;
+                highlightRect.right = ovalRect.right - 5;
+                highlightRect.bottom = ovalRect.bottom - 5;
+                canvas.drawOval(highlightRect, highlightPaint);
+            }
         }
     }
 

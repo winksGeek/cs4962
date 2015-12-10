@@ -9,4 +9,5 @@ public class ItemCard {
     }
 
     Type type;
+    Player owner;
 }

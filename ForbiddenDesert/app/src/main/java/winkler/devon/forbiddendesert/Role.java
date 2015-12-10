@@ -46,6 +46,21 @@ public class Role {
         return waterCount;
     }
 
+    public boolean checkLegalMove(int playerXPos, int playerYPos, int xPos, int yPos){
+        int playerSum = playerXPos + playerYPos;
+        int tileSum = xPos + yPos;
+        boolean result = false;
+        if(_type == Type.Explorer){
+            int xDiff = Math.abs(playerXPos - xPos);
+            int yDiff = Math.abs(playerYPos - yPos);
+            result = xDiff <=1 && yDiff <=1;
+        }else {
+            result = Math.abs(playerSum - tileSum) == 1;
+            result = result && (playerXPos == xPos || playerYPos == yPos);
+        }
+        return result;
+    }
+
     public int getColor(){
         int color = 0x00000000;
         switch (_type){
