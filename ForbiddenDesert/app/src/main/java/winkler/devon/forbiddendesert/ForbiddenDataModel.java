@@ -1,10 +1,8 @@
 package winkler.devon.forbiddendesert;
 
-import android.widget.Toast;
-
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -18,7 +16,7 @@ public class ForbiddenDataModel {
 
     HashMap<String, Game> _games;
     Game _currentGame;
-    Player _jetPackingPlayer;
+    Player _itemUsingPlayer;
     SetModeListener _setModeListener;
     private static ForbiddenDataModel _Instance = null;
     public static ForbiddenDataModel getInstance(){
@@ -29,6 +27,24 @@ public class ForbiddenDataModel {
     }
     private ForbiddenDataModel(){
         _games = new HashMap<>();
+    }
+
+    public HashMap<String, Game> getGames() {
+        return _games;
+    }
+
+    public ArrayList<Game> getGamesArrayList() {
+        ArrayList<Game> games = new ArrayList<>(_games.values());
+        Collections.sort(games, Collections.reverseOrder());
+        return games;
+    }
+
+    public String getStormCardsLeftString() {
+       return _currentGame.getCardstoDrawString();
+    }
+
+    public Player getCurrentPlayer() {
+        return _currentGame.getCurrentPlayer();
     }
 
     public void setGames(HashMap <String, Game> games){
@@ -72,6 +88,10 @@ public class ForbiddenDataModel {
         return _currentGame.get_parts();
     }
 
+    public Player [] getPlayersForSharingWater() {
+        return _currentGame.getPlayersForWaterShare();
+    }
+
     public DesertTile[] getBoard(String gameId){
         Game game = _games.get(gameId);
         return game.get_board();
@@ -105,12 +125,19 @@ public class ForbiddenDataModel {
         _currentGame = _games.get(gameId);
     }
 
-    public void movePlayer(int xPos, int yPos) {
+    public void movePlayer(int xPos, int yPos, Player player) {
         DesertTile tile = getTileFromBoard(xPos, yPos);
-        if(tile.isPassable()) {
+        Player currentPlayer = getCurrentPlayer();
+        if(tile.isPassable() || currentPlayer._role._type == Role.Type.Climber) {
             if(_currentGame.hasActionsLeft()) {
                 if (_currentGame.movePlayer(xPos, yPos)) {
                     _currentGame.useAction();
+                    if(player != null){
+                        _currentGame.movePlayer(player, xPos, yPos);
+                    }
+                    if(_currentGame.isStormActive()){
+                        _setModeListener.setMode(GameActivity.Mode.Storm);
+                    }
                 }
             }
         }
@@ -126,7 +153,11 @@ public class ForbiddenDataModel {
             DesertTile tile = getTileFromBoard(xPos, yPos);
             if(_currentGame.hasActionsLeft()) {
                 if (tile.removeSand(player.getNumberOfTilesAbleToRemove())) {
+                    _currentGame.addToSandTilesLeft(player.getNumberOfTilesAbleToRemove());
                     _currentGame.useAction();
+                    if(_currentGame.isStormActive()){
+                        _setModeListener.setMode(GameActivity.Mode.Storm);
+                    }
                 }
             }
         }
@@ -149,6 +180,9 @@ public class ForbiddenDataModel {
                         _currentGame.addWaterToPlayersOnTile(xPos, yPos, 2);
                     }
                     _currentGame.useAction();
+                    if(_currentGame.isStormActive()){
+                        _setModeListener.setMode(GameActivity.Mode.Storm);
+                    }
                 }
             }
         }
@@ -163,6 +197,9 @@ public class ForbiddenDataModel {
                 if (partClaimed != null) {
                     _currentGame.collectPart(partClaimed._type);
                     _currentGame.useAction();
+                    if(_currentGame.isStormActive()){
+                        _setModeListener.setMode(GameActivity.Mode.Storm);
+                    }
                     return partClaimed;
                 }
             }
@@ -179,7 +216,11 @@ public class ForbiddenDataModel {
     }
 
     public StormCard drawStormCard(){
-        return _currentGame.dealStormCard();
+        StormCard card = _currentGame.dealStormCard();
+        if(!_currentGame.isStormActive()){
+            _setModeListener.setMode(GameActivity.Mode.Move);
+        }
+        return card;
     }
 
     public void playItemCard(ItemCard card) {
@@ -193,7 +234,7 @@ public class ForbiddenDataModel {
                 break;
             case Jet:
                 if(_setModeListener != null) {
-                    _jetPackingPlayer = player;
+                    _itemUsingPlayer = player;
                     _setModeListener.setMode(GameActivity.Mode.Jet);
                 }
                 break;
@@ -211,6 +252,13 @@ public class ForbiddenDataModel {
                 if(_setModeListener != null) {
                     _setModeListener.setMode(GameActivity.Mode.Terrascope);
                 }
+                break;
+            case Blaster:
+                if(_setModeListener != null){
+                    _itemUsingPlayer = player;
+                    _setModeListener.setMode(GameActivity.Mode.Blaster);
+                }
+                break;
 
         }
         player.removeCardFromHand(card);
@@ -223,15 +271,16 @@ public class ForbiddenDataModel {
     public void setGameOver(boolean win) {
         _currentGame.setGameOver(win);
     }
+
     public void jetPlayer(int xPos, int yPos, Player player) {
         DesertTile tile = getTileFromBoard(xPos, yPos);
-        if(tile.isPassable() && _jetPackingPlayer != null) {
-            _currentGame.movePlayer(_jetPackingPlayer, xPos, yPos);
+        if(tile.isPassable() && _itemUsingPlayer != null) {
+            _currentGame.movePlayer(_itemUsingPlayer, xPos, yPos);
             if(player != null){
                 _currentGame.movePlayer(player, xPos, yPos);
             }
             _setModeListener.setMode(GameActivity.Mode.Move);
-            _jetPackingPlayer = null;
+            _itemUsingPlayer = null;
         }
     }
 
@@ -240,8 +289,23 @@ public class ForbiddenDataModel {
         ArrayList<Player> tempPlayers = new ArrayList<>();
         for(int i = 0; i < players.length; i++){
             Player player = players[i];
-            if(player._role._type != _jetPackingPlayer._role._type){
-                if(player.xPos == _jetPackingPlayer.xPos && player .yPos == _jetPackingPlayer.yPos){
+            if(player._role._type != _itemUsingPlayer._role._type){
+                if(player.xPos == _itemUsingPlayer.xPos && player .yPos == _itemUsingPlayer.yPos){
+                    tempPlayers.add(player);
+                }
+            }
+        }
+        return tempPlayers.toArray(new Player[]{});
+    }
+
+    public Player[] getPlayersOnCurrentPlayersTile() {
+        Player[] players = _currentGame.getPlayers();
+        Player currentPlayer = _currentGame.getCurrentPlayer();
+        ArrayList<Player> tempPlayers = new ArrayList<>();
+        for(int i = 0; i < players.length; i++){
+            Player player = players[i];
+            if(player._role._type != currentPlayer._role._type){
+                if(player.xPos == currentPlayer.xPos && player .yPos == currentPlayer.yPos){
                     tempPlayers.add(player);
                 }
             }
@@ -256,5 +320,19 @@ public class ForbiddenDataModel {
             return tile;
         }
         return null;
+    }
+
+    public void duneBlast(int xPos, int yPos){
+        DesertTile tile = getTileFromBoard(xPos, yPos);
+        if(_itemUsingPlayer != null) {
+            if (_itemUsingPlayer.checkLegalSandMove(xPos, yPos)) {
+                if(tile.numberOfSandTiles > 0){
+                    _currentGame.addToSandTilesLeft(tile.numberOfSandTiles);
+                    tile.removeSand(tile.numberOfSandTiles);
+                    _setModeListener.setMode(GameActivity.Mode.Move);
+                    _itemUsingPlayer = null;
+                }
+            }
+        }
     }
 }

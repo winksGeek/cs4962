@@ -8,12 +8,12 @@ import java.util.Calendar;
 /**
  * Created by devonwinkler on 11/16/15.
  */
-public class Game {
+public class Game implements Comparable<Game>{
 
     private DesertTile [] _board;
     private DesertTile _crashTile;
-    private String _id;
-    private Calendar _gameStarted;
+    public String _id;
+    public Calendar _gameStarted;
     private Player[] _players;
     private Part [] _parts;
     private int _currentTurn;
@@ -25,7 +25,7 @@ public class Game {
     private int _stormLevel;
     private int _cardsToDraw;
     private int _sandTilesLeft;
-    private String gameOver;
+    public String gameOver;
 
     public Game(String id, int numberOfPlayers){
         _currentTurn = 0;
@@ -47,7 +47,7 @@ public class Game {
         _stormCardsPerLevel = fillStormLevels(numberOfPlayers);
         _stormLevel = 0;
         _cardsToDraw = 0;
-        gameOver = "No";
+        gameOver = "In Progress";
     }
 
     private int[] fillStormLevels(int numberOfPlayers) {
@@ -96,6 +96,10 @@ public class Game {
             }
         }
         return board;
+    }
+
+    public String getCardstoDrawString(){
+        return "" + _cardsToDraw;
     }
 
     private void placeSandTiles(){
@@ -179,7 +183,10 @@ public class Game {
         Player player = _players[id];
         DesertTile playerTile = getTileFromBoard(player.xPos, player.yPos);
         DesertTile moveTile = getTileFromBoard(xPos, yPos);
-        if(playerTile.numberOfSandTiles < 2 || player._role._type == Role.Type.Climber) {
+        Player climber = findClimber();
+        if(playerTile.numberOfSandTiles < 2
+                || player._role._type == Role.Type.Climber
+                || (climber != null && (player.xPos == climber.xPos && player.yPos == player.yPos))) {
             if (player.checkLegalMove(xPos, yPos) || ((playerTile.type == DesertTile.Type.Tunnel && playerTile.status == DesertTile.Status.Flipped) && (moveTile.type == DesertTile.Type.Tunnel && moveTile.status == DesertTile.Status.Flipped))) {
                 player.xPos = xPos;
                 player.yPos = yPos;
@@ -187,6 +194,17 @@ public class Game {
             }
         }
         return false;
+    }
+
+    public Player findClimber(){
+        Player climber = null;
+        for(int i = 0; i < _players.length; i++){
+            Player player = _players[i];
+            if(player._role._type == Role.Type.Climber){
+                climber = player;
+            }
+        }
+        return climber;
     }
 
     public void useAction(){
@@ -464,6 +482,13 @@ public class Game {
 
     }
 
+    public void addToSandTilesLeft(int number){
+        _sandTilesLeft += number;
+        if(_sandTilesLeft > 48){
+            _sandTilesLeft = 48;
+        }
+    }
+
     public boolean isStormActive() {
         return _stormActive;
     }
@@ -475,5 +500,22 @@ public class Game {
                 player.addWater(amount);
             }
         }
+    }
+
+    public Player[] getPlayersForWaterShare() {
+        ArrayList<Player> tempPlayers = new ArrayList<>();
+        Player currentPlayer = getCurrentPlayer();
+        for(int i = 0; i < _players.length; i++){
+            Player player = _players[i];
+            if(currentPlayer.checkLegalWaterShare(player.xPos, player.yPos) && currentPlayer._role._type != player._role._type){
+                tempPlayers.add(player);
+            }
+        }
+        return tempPlayers.toArray(new Player[]{});
+    }
+
+    @Override
+    public int compareTo(Game another) {
+        return this._gameStarted.compareTo(another._gameStarted);
     }
 }

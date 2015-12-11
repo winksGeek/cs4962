@@ -41,12 +41,6 @@
                 android:layout_height="wrap_content"
                 android:text="@string/four"
                 android:id="@+id/radio_four"/>
-
-            <RadioButton
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/five"
-                android:id="@+id/radio_five"/>
         </RadioGroup>
 
         <TextView
@@ -138,18 +132,6 @@
                 android:layout_height="wrap_content"
                 android:text="@string/explorer"
                 android:id="@+id/roles_explorer"
-                android:onClick="addCheckBoxToQueue"/>
-            <CheckBox
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/meteorologist"
-                android:id="@+id/roles_meteorologist"
-                android:onClick="addCheckBoxToQueue"/>
-            <CheckBox
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/navigator"
-                android:id="@+id/roles_navigator"
                 android:onClick="addCheckBoxToQueue"/>
             <CheckBox
                 android:layout_width="wrap_content"

@@ -26,12 +26,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/load_game"
-        android:id="@+id/load_game_button"/>
+        android:id="@+id/load_game_button"
+        android:onClick="startLoadGame"/>
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/instructions"
-        android:id="@+id/instructions_button"/>
+        android:id="@+id/instructions_button"
+        android:onClick="startInstructions"/>
 
 </LinearLayout>

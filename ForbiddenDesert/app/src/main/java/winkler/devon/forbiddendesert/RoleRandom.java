@@ -14,8 +14,6 @@ public class RoleRandom {
         _roles.add(Role.Type.Archeologist);
         _roles.add(Role.Type.Climber);
         _roles.add(Role.Type.Explorer);
-        _roles.add(Role.Type.Meteorologist);
-        _roles.add(Role.Type.Navigator);
         _roles.add(Role.Type.WaterCarrier);
     }
 

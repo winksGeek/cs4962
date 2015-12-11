@@ -77,6 +77,14 @@ public class Player {
         return result;
     }
 
+    public boolean checkLegalWaterShare(int xPos, int yPos){
+        boolean result = this.xPos == xPos && this.yPos == yPos;
+        if(_role._type == Role.Type.WaterCarrier){
+            result = result || _role.checkLegalMove(this.xPos, this.yPos, xPos, yPos);
+        }
+        return result;
+    }
+
     public void addCardToHand(ItemCard card){
         _hand.add(card);
         card.owner = this;

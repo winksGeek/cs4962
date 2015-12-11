@@ -31,5 +31,8 @@
     <string name="remove_sand">Remove Sand</string>
     <string name="excavate">Excavate</string>
     <string name="pick_up_a_part">Pick Up a Part</string>
+    <string name="title_activity_instructions">InstructionsActivity</string>
+
+    <string name="hello_world">Hello world!</string>
 
 </resources>

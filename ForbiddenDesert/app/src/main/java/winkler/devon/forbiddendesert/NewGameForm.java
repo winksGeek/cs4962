@@ -63,12 +63,6 @@ public class NewGameForm extends Activity {
             case R.id.roles_explorer:
                 type = Role.Type.Explorer;
                 break;
-            case R.id.roles_meteorologist:
-                type = Role.Type.Meteorologist;
-                break;
-            case R.id.roles_navigator:
-                type = Role.Type.Navigator;
-                break;
             case R.id.roles_water_carrier:
                 type = Role.Type.WaterCarrier;
                 break;
@@ -111,9 +105,6 @@ public class NewGameForm extends Activity {
                 break;
             case R.id.radio_four:
                 numPlayers = 4;
-                break;
-            case R.id.radio_five:
-                numPlayers = 5;
                 break;
         }
         return numPlayers;

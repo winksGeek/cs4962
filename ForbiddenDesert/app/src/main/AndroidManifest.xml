@@ -23,7 +23,16 @@
         </activity>
         <activity
             android:name=".NewGameForm"
+            android:noHistory="true"
             android:screenOrientation="landscape" >
+        </activity>
+        <activity
+            android:name=".LoadGameActivity"
+            android:screenOrientation="landscape" >
+        </activity>
+        <activity
+            android:name=".InstructionsActivity"
+            android:label="@string/title_activity_instructions" >
         </activity>
     </application>
 

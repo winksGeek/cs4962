@@ -3,6 +3,7 @@ package winkler.devon.forbiddendesert;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -13,16 +14,24 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
-public class GameActivity extends Activity implements DesertBoardView.TileClickListener, PlayerView.CardPlayedListener, ForbiddenDataModel.SetModeListener {
+import com.google.gson.Gson;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+
+public class GameActivity extends Activity implements DesertBoardView.TileClickListener, PlayerView.CardPlayedListener, ForbiddenDataModel.SetModeListener, ShareWaterView.ShareWaterListener {
     public static final String GAME_ID = "GAME_ID";
     DesertBoardView _boardView;
     PartsCollectedView _partsCollected;
     LinearLayout _playerLayout;
     LinearLayout _actionBarLayout;
     TextView _cardsToDraw;
-    TextView _gearModeView;
+    TextView _gameModeView;
     ToggleButton _moveAction;
+    ToggleButton _getWaterFromTile;
     ChoosePlayerView _playersChoiceView;
+    ShareWaterView _waterShareView;
 
     @Override
     public void onPlayed(ItemCard card) {
@@ -33,13 +42,31 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        ForbiddenDataModel _model = ForbiddenDataModel.getInstance();
+        Gson gson = new Gson();
+        String jsonString = gson.toJson(_model.getGames());
+        try{
+            File file = new File(getFilesDir(), "gameModel.txt");
+            FileWriter fileWriter = new FileWriter(file);
+            BufferedWriter writer = new BufferedWriter(fileWriter);
+            writer.write(jsonString);
+            writer.close();
+
+        }catch (Exception e){
+            Log.e("Persistence", "Error saving file: " + e.getMessage());
+        }
+    }
+
+    @Override
     public void setMode(Mode mode) {
         ForbiddenDataModel model = ForbiddenDataModel.getInstance();
         _currentMode = mode;
         if(mode == Mode.Jet) {
             _actionBarLayout.setVisibility(View.GONE);
-            _gearModeView.setText("Jet Pack In Use");
-            _gearModeView.setVisibility(View.VISIBLE);
+            _gameModeView.setText("Jet Pack In Use");
+            _gameModeView.setVisibility(View.VISIBLE);
             Player [] players = model.getPlayersOnJetTile();
             if(players.length > 0) {
                 _playersChoiceView.setVisibility(View.VISIBLE);
@@ -47,19 +74,58 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
             }
         }else if(mode == Mode.Terrascope){
             _actionBarLayout.setVisibility(View.GONE);
-            _gearModeView.setText("Terrascope In Use");
-            _gearModeView.setVisibility(View.VISIBLE);
-        }else{
-            _actionBarLayout.setVisibility(View.VISIBLE);
-            _gearModeView.setVisibility(View.GONE);
+            _gameModeView.setText("Terrascope In Use");
+            _gameModeView.setVisibility(View.VISIBLE);
             _playersChoiceView.clearPlayers();
             _playersChoiceView.setVisibility(View.GONE);
+        }else if (mode == Mode.Blaster){
+            _actionBarLayout.setVisibility(View.GONE);
+            _gameModeView.setText("Blaster in Use");
+            _gameModeView.setVisibility(View.VISIBLE);
+            _playersChoiceView.clearPlayers();
+            _playersChoiceView.setVisibility(View.GONE);
+        }else if (mode == Mode.Storm){
+            _actionBarLayout.setVisibility(View.GONE);
+            _playersChoiceView.clearPlayers();
+            _playersChoiceView.setVisibility(View.GONE);
+            _gameModeView.setText("Storm Turn in Progress");
+            _cardsToDraw.setText("Cards to Draw: " + model.getStormCardsLeftString());
+            _cardsToDraw.setVisibility(View.VISIBLE);
+            _gameModeView.setVisibility(View.VISIBLE);
+        }
+        else{
+            _actionBarLayout.setVisibility(View.VISIBLE);
+            _gameModeView.setVisibility(View.GONE);
+            _playersChoiceView.clearPlayers();
+            _playersChoiceView.setVisibility(View.GONE);
+            _getWaterFromTile.setVisibility(View.GONE);
+            _cardsToDraw.setVisibility(View.GONE);
             _moveAction.callOnClick();
+            Player currentPlayer = model.getCurrentPlayer();
+            if(currentPlayer._role._type == Role.Type.Climber){
+                Player [] players = model.getPlayersOnCurrentPlayersTile();
+                _playersChoiceView.setPlayers(players, "Choose Player to Climb With");
+                _playersChoiceView.setVisibility(View.VISIBLE);
+            }
+            if(currentPlayer._role._type == Role.Type.WaterCarrier){
+                _getWaterFromTile.setVisibility(View.VISIBLE);
+            }
         }
     }
 
+    @Override
+    public void shareWater(Player player) {
+        ForbiddenDataModel model = ForbiddenDataModel.getInstance();
+        Player currentPlayer = model.getCurrentPlayer();
+        if(currentPlayer.getWaterLeft() < currentPlayer._role.getMaxWater()) {
+            currentPlayer.addWater(-1);
+            player.addWater(1);
+        }
+        refreshPlayerViews();
+    }
+
     public static enum Mode {
-        Move, Remove, Excavate, Pick, Jet, Terrascope
+        Move, Remove, Excavate, Pick, Jet, Terrascope, Blaster, Storm, Extract, Share
     }
     Mode _currentMode;
     @Override
@@ -98,6 +164,7 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
         _moveAction = new ToggleButton(this);
         _moveAction.setTextOn(getString(R.string.move));
         _moveAction.setTextOff(getString(R.string.move));
+        _moveAction.setTextSize(10);
         _moveAction.setChecked(true);
         _actionBarLayout.addView(_moveAction, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT, 0));
 
@@ -106,6 +173,7 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
         removeSandAction.setTextOn(getString(R.string.remove_sand));
         removeSandAction.setTextOff(getString(R.string.remove_sand));
         removeSandAction.setChecked(false);
+        removeSandAction.setTextSize(10);
         _actionBarLayout.addView(removeSandAction, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT, 0));
 
         //EXCAVATE
@@ -113,6 +181,7 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
         excavateAction.setTextOn(getString(R.string.excavate));
         excavateAction.setTextOff(getString(R.string.excavate));
         excavateAction.setChecked(false);
+        excavateAction.setTextSize(10);
         _actionBarLayout.addView(excavateAction, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT, 0));
 
         //PICK UP A PART
@@ -120,12 +189,32 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
         partAction.setTextOn(getString(R.string.pick_up_a_part));
         partAction.setTextOff(getString(R.string.pick_up_a_part));
         partAction.setChecked(false);
+        partAction.setTextSize(10);
         _actionBarLayout.addView(partAction, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT, 0));
 
+        //SHARE WATER
+        final ToggleButton shareWaterAction = new ToggleButton(this);
+        shareWaterAction.setTextOn("Share Water");
+        shareWaterAction.setTextOff("Share Water");
+        shareWaterAction.setChecked(false);
+        shareWaterAction.setTextSize(10);
+        _actionBarLayout.addView(shareWaterAction, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT, 0));
+
+
+        //GET WATER FROM WELL
+        _getWaterFromTile = new ToggleButton(this);
+        _getWaterFromTile.setTextOn("Get Water From Well");
+        _getWaterFromTile.setTextOff("Get Water From Well");
+        _getWaterFromTile.setChecked(false);
+        _getWaterFromTile.setTextSize(10);
+        _getWaterFromTile.setVisibility(View.GONE);
+
+        _actionBarLayout.addView(_getWaterFromTile, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT, 0));
+
         boardLayout.addView(_actionBarLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
-        _gearModeView = new TextView(this);
-        _gearModeView.setVisibility(View.GONE);
-        boardLayout.addView(_gearModeView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
+        _gameModeView = new TextView(this);
+        _gameModeView.setVisibility(View.GONE);
+        boardLayout.addView(_gameModeView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
         //endregion
 
 
@@ -136,9 +225,16 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
 
         LinearLayout leftPlayerArea = new LinearLayout(this);
         leftPlayerArea.setOrientation(LinearLayout.VERTICAL);
+
         _playersChoiceView = new ChoosePlayerView(this);
         _playersChoiceView.setVisibility(View.GONE);
         leftPlayerArea.addView(_playersChoiceView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
+
+        _waterShareView = new ShareWaterView(this);
+        _waterShareView.setVisibility(View.GONE);
+        _waterShareView.setShareWaterListener(this);
+        leftPlayerArea.addView(_waterShareView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0));
+
         mainBoardLayout.addView(leftPlayerArea, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1));
 
         //region Board
@@ -205,6 +301,7 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
                                     break;
                             }
                         }
+                        _cardsToDraw.setText("Cards to Draw: " + model.getStormCardsLeftString());
                         _boardView.setBoard(model.getBoard());
                         refreshPlayerViews();
                         break;
@@ -246,11 +343,21 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
         _moveAction.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                ForbiddenDataModel model = ForbiddenDataModel.getInstance();
+                Player currentPlayer = model.getCurrentPlayer();
                 _moveAction.setChecked(true);
                 removeSandAction.setChecked(false);
                 excavateAction.setChecked(false);
                 partAction.setChecked(false);
+                shareWaterAction.setChecked(false);
+                _getWaterFromTile.setChecked(false);
                 _currentMode = Mode.Move;
+                if(currentPlayer._role._type == Role.Type.Climber){
+                    Player [] playersOnTile = model.getPlayersOnCurrentPlayersTile();
+                    _playersChoiceView.setPlayers(playersOnTile, "Choose Player to Climb With");
+                    _playersChoiceView.setVisibility(View.VISIBLE);
+                }
+                _waterShareView.setVisibility(View.GONE);
             }
         });
         removeSandAction.setOnClickListener(new View.OnClickListener() {
@@ -260,7 +367,11 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
                 removeSandAction.setChecked(true);
                 excavateAction.setChecked(false);
                 partAction.setChecked(false);
+                shareWaterAction.setChecked(false);
+                _getWaterFromTile.setChecked(false);
                 _currentMode = Mode.Remove;
+                _playersChoiceView.setVisibility(View.GONE);
+                _waterShareView.setVisibility(View.GONE);
             }
         });
         excavateAction.setOnClickListener(new View.OnClickListener() {
@@ -270,7 +381,11 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
                 removeSandAction.setChecked(false);
                 excavateAction.setChecked(true);
                 partAction.setChecked(false);
+                shareWaterAction.setChecked(false);
+                _getWaterFromTile.setChecked(false);
                 _currentMode = Mode.Excavate;
+                _playersChoiceView.setVisibility(View.GONE);
+                _waterShareView.setVisibility(View.GONE);
             }
         });
         partAction.setOnClickListener(new View.OnClickListener() {
@@ -280,11 +395,54 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
                 removeSandAction.setChecked(false);
                 excavateAction.setChecked(false);
                 partAction.setChecked(true);
+                shareWaterAction.setChecked(false);
+                _getWaterFromTile.setChecked(false);
                 _currentMode = Mode.Pick;
+                _playersChoiceView.setVisibility(View.GONE);
+                _waterShareView.setVisibility(View.GONE);
+            }
+        });
+        shareWaterAction.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ForbiddenDataModel model = ForbiddenDataModel.getInstance();
+                _moveAction.setChecked(false);
+                removeSandAction.setChecked(false);
+                excavateAction.setChecked(false);
+                partAction.setChecked(false);
+                shareWaterAction.setChecked(true);
+                _getWaterFromTile.setChecked(false);
+                _currentMode = Mode.Share;
+                _waterShareView.setPlayers(model.getPlayersForSharingWater());
+                _playersChoiceView.setVisibility(View.GONE);
+                _waterShareView.setVisibility(View.VISIBLE);
+            }
+        });
+        _getWaterFromTile.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                _moveAction.setChecked(false);
+                removeSandAction.setChecked(false);
+                excavateAction.setChecked(false);
+                partAction.setChecked(false);
+                shareWaterAction.setChecked(false);
+                _getWaterFromTile.setChecked(true);
+                _currentMode = Mode.Extract;
+                _playersChoiceView.setVisibility(View.GONE);
+                _waterShareView.setVisibility(View.GONE);
+
             }
         });
 
-        ForbiddenDataModel _model = ForbiddenDataModel.getInstance();
+        Player currentPlayer = model.getCurrentPlayer();
+        if(currentPlayer._role._type == Role.Type.Climber){
+            Player [] playersOnTile = model.getPlayersOnCurrentPlayersTile();
+            _playersChoiceView.setPlayers(playersOnTile, "Choose Player to Climb With");
+            _playersChoiceView.setVisibility(View.VISIBLE);
+        }
+        if(currentPlayer._role._type == Role.Type.WaterCarrier){
+            _getWaterFromTile.setVisibility(View.VISIBLE);
+        }
         setContentView(boardLayout);
     }
 
@@ -292,7 +450,11 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
     public void onTileClick(int xPos, int yPos) {
         ForbiddenDataModel model = ForbiddenDataModel.getInstance();
         if(_currentMode == Mode.Move) {
-            model.movePlayer(xPos, yPos);
+            model.movePlayer(xPos, yPos, _playersChoiceView.getPlayerChosen());
+            Player currentPlayer = model.getCurrentPlayer();
+            if(currentPlayer._role._type == Role.Type.Climber){
+                _playersChoiceView.setPlayers(model.getPlayersOnCurrentPlayersTile(), "Choose Player to Climb With");
+            }
             _boardView.setPlayers(model.getPlayersForGame());
         }
         if(_currentMode == Mode.Remove) {
@@ -316,6 +478,18 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
             DesertTile tile = model.scope(xPos, yPos);
             if(tile != null){
                 Toast.makeText(this, peekAtTile(tile), Toast.LENGTH_LONG).show();
+            }
+            _boardView.setPlayers(model.getPlayersForGame());
+        }
+        if(_currentMode == Mode.Blaster){
+            model.duneBlast(xPos, yPos);
+            _boardView.setPlayers(model.getPlayersForGame());
+        }
+        if(_currentMode == Mode.Extract){
+            DesertTile tile = model.getTileFromBoard(xPos, yPos);
+            if(tile.type == DesertTile.Type.Oasis && tile.status == DesertTile.Status.Flipped) {
+                model.getCurrentPlayer().addWater(2);
+                model._currentGame.useAction();
             }
             _boardView.setPlayers(model.getPlayersForGame());
         }
