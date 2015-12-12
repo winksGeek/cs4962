@@ -71,22 +71,22 @@ public class PlayerHand extends View {
         Drawable drawable = null;
         switch(card.type){
             case Jet:
-                drawable = getResources().getDrawable(R.drawable.propeller_part, null);
+                drawable = getResources().getDrawable(R.drawable.gear_jet, null);
                 break;
             case Solar:
-                drawable = getResources().getDrawable(R.drawable.engine_part, null);
+                drawable = getResources().getDrawable(R.drawable.gear_solar, null);
                 break;
             case Blaster:
-                drawable = getResources().getDrawable(R.drawable.crystal_part, null);
+                drawable = getResources().getDrawable(R.drawable.gear_blaster, null);
                 break;
             case Throttle:
-                drawable = getResources().getDrawable(R.drawable.navigation_part, null);
+                drawable = getResources().getDrawable(R.drawable.gear_throttle, null);
                 break;
             case Water:
-                drawable = getResources().getDrawable(R.drawable.navigation_part, null);
+                drawable = getResources().getDrawable(R.drawable.gear_water, null);
                 break;
             case Terrascope:
-                drawable = getResources().getDrawable(R.drawable.navigation_part, null);
+                drawable = getResources().getDrawable(R.drawable.gear_terrascope, null);
                 break;
         }
 

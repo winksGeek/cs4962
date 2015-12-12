@@ -89,7 +89,7 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
             _playersChoiceView.clearPlayers();
             _playersChoiceView.setVisibility(View.GONE);
             _gameModeView.setText("Storm Turn in Progress");
-            _cardsToDraw.setText("Cards to Draw: " + model.getStormCardsLeftString());
+            _cardsToDraw.setText("Cards to Draw: " + model.getStormCardsLeftString() + "\n(Tap to Draw)");
             _cardsToDraw.setVisibility(View.VISIBLE);
             _gameModeView.setVisibility(View.VISIBLE);
         }
@@ -301,7 +301,7 @@ public class GameActivity extends Activity implements DesertBoardView.TileClickL
                                     break;
                             }
                         }
-                        _cardsToDraw.setText("Cards to Draw: " + model.getStormCardsLeftString());
+                        _cardsToDraw.setText("Cards to Draw: " + model.getStormCardsLeftString()+"\n(Tap to Draw)");
                         _boardView.setBoard(model.getBoard());
                         refreshPlayerViews();
                         break;
